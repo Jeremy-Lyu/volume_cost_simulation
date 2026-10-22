@@ -1,0 +1,41 @@
+{
+  "_说明": "按天排产层参数（示例数据，⚠ 暂定，可调）",
+  "month": 10,
+  "days": 30,
+  "first_weekday": 0,
+  "monthly_demand": 10000,
+  "shops": [
+    "BIW",
+    "PNT"
+  ],
+  "run_rate": 0.9,
+  "biw_buffer_min": 50,
+  "biw_buffer_max": 600,
+  "biw_buffer_start": 200,
+  "pbs_buffer_min": 0,
+  "pbs_buffer_max": 300,
+  "pbs_buffer_start": 150,
+  "body_value_biw": 45000,
+  "body_value_pbs": 52000,
+  "capital_rate_month": 0.005,
+  "hold_cost_per_unit_day": 10,
+  "weekend_ot_multiplier": 2.0,
+  "allow_weekend_work": true,
+  "labor_daily_variable_share": null,
+  "paid_days_month": 21.75,
+  "flex_share_sensitivity": 0.5,
+  "demand_sweep": [
+    6000,
+    8000,
+    10000
+  ],
+  "shortage_penalty_per_unit": 200000,
+  "_labor_说明": "v5.2：null=按 labor_flex.csv（派遣比/停工日发薪%）推出；填数字则覆盖",
+  "allow_borrow": true,
+  "prev_jph_tier": null,
+  "dispatch_sweep": [
+    0.0,
+    0.2,
+    0.5
+  ]
+}

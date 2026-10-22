@@ -1,0 +1,20 @@
+{
+  "plant_id": "MARGIN_DEMO",
+  "plant_name": "边际贡献口径示例（虚构，示例数据）",
+  "shops": [
+    "STP",
+    "BIW",
+    "PNT",
+    "TCF"
+  ],
+  "shop_names": {
+    "STP": "冲压",
+    "BIW": "焊装",
+    "PNT": "涂装",
+    "TCF": "总装"
+  },
+  "core_version": "core-1.0",
+  "config_version": "TZ-cfg-2026.10-示例",
+  "owner": "⚠ 待指定（工厂 key user）",
+  "note": "含收入侧输入：price/fx/tariff/rebate + mat_cost；用于 build_margin.py 生成 margin.csv（汇率/关税/退税 → 决策口径）"
+}

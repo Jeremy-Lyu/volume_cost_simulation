@@ -1,0 +1,4 @@
+model,month,calloff_cap,git_incoming,safety_buffer,opening_stock,scrap_rate,cancel_rate
+V446K,0,20000,0,80,80,0.004,0.25
+V451,0,20000,0,80,80,0.004,0.25
+V452,0,20000,0,80,80,0.004,0.25

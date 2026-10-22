@@ -1,0 +1,35 @@
+# 环境与缓存
+.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.cache/
+*.pyc
+.DS_Store
+.streamlit/machine_id*
+
+# 本地求解结果与日志（演示样例在 samples/）
+v5.2/output/
+v5.2/logs/
+**/output/logs/
+
+# 历史代码与压缩包：本机查阅，不进仓库（现行代码在 v5.2/）
+archive/
+
+# 不宜公开的背景稿（点名作业标准与专有布局来源）
+DOC/归档/沃尔沃理论背景与业务信息.md
+
+# 编辑器与本机
+.idea/
+.vscode/
+*.swp
+~$*.docx
+~$*.xlsx
+
+# 密钥（预留）
+.env
+.env.*
+!.env.example
+credentials.json
+**/secrets.toml

@@ -1,0 +1,5 @@
+shop,standby_kw_ratio,off_kw_ratio,gas_run_m3h,gas_m3_per_unit,gas_standby_ratio,heatup_hours,heatup_kwh,heatup_m3,ecoat_hold_kw,ecoat_hold_m3h,weekend_policy,night_policy,note
+STP,0.15,0.05,0,0,0,0,0,0,0,0,auto,hold,⚠ 行业参考估算；冲压无燃气
+BIW,0.20,0.05,0,0,0,0,0,0,0,0,auto,hold,⚠ 行业参考估算；焊装无燃气
+PNT,0.30,0.05,450,4,0.40,2,4500,900,150,40,auto,hold,⚠ 待机=运行30%、保温气=运行气40%；电泳周末保温不停热（ecoat_hold_*）；启炉只含烘房+喷房
+TCF,0.15,0.05,0,0,0,0,0,0,0,0,auto,hold,⚠ 行业参考估算

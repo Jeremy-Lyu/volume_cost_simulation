@@ -1,0 +1,5 @@
+lane,mode,scope,capacity,cost_per_trip,fixed_month_cost
+成品-干线公路,truck,outbound,9.0,4200.0,0.0
+成品-干线铁路,rail,outbound,30.0,9000.0,60000.0
+入厂-近程循环取货,milkrun,inbound,11.0,2300.0,250000.0
+入厂-远程卡车,truck,inbound,16.0,3800.0,0.0

@@ -1,0 +1,13 @@
+{
+  "_说明": "能源参数（全部 ⚠ 暂定，可调）。改完直接重跑，不用改代码。",
+  "tou_enabled": true,
+  "tou_version": "2026",
+  "voltage": "110kV",
+  "purchase_mode": "agent",
+  "market_price_factor": 1.0,
+  "demand_charge_kw_month": 40.8,
+  "demand_coincidence": 0.85,
+  "gas_price": 3.6,
+  "year": 2026,
+  "heatup_window_end": 8
+}

@@ -1,0 +1,5 @@
+shop,stations,hours_per_unit,cost_per_hour,scrap_rate,scrap_cost_per_unit
+STP,3,0.4,60,0.003,800
+BIW,2,0.6,65,0.005,1500
+PNT,1,0.8,70,0.012,1200
+TCF,2,0.5,60,0.003,2500

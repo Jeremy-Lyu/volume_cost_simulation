@@ -1,0 +1,10 @@
+{
+  "plant_id": "TZ",
+  "plant_name": "台州（试点，示例数据）",
+  "shops": ["STP", "BIW", "PNT", "TCF"],
+  "shop_names": {"STP": "冲压", "BIW": "焊装", "PNT": "涂装", "TCF": "总装"},
+  "core_version": "core-1.0",
+  "config_version": "TZ-cfg-2026.10-示例",
+  "owner": "⚠ 待指定（工厂 key user）",
+  "note": "示例配置包，数字为示例数据，非真实数据"
+}

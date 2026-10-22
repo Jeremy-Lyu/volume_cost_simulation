@@ -1,0 +1,12 @@
+key,value
+wage_per_head_month,8280
+elec_price,0.68
+shortage_penalty,30000
+solver_time_limit,60
+std_hours_month,174
+ot_multiplier,1.5
+ot_hard_cap_per_head_month,60
+ot_excess_premium_per_head_hour,30
+night_allowance_per_head_night,30
+backlog_cost_per_unit_month,1500
+mip_rel_gap,0.0001

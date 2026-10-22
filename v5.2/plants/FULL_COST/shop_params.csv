@@ -1,0 +1,5 @@
+shop,kwh_per_unit,oh_fixed_month,oh_var_per_unit,ot_max_hours_month,buffer_cap,hold_cost_per_unit_month,idle_fixed_month
+STP,15,720000.0,120,36,6000,150,300000
+BIW,40,1200000.0,200,36,1500,300,300000
+PNT,120,1500000.0,350,36,800,500,300000
+TCF,30,1320000.0,250,36,0,0,300000

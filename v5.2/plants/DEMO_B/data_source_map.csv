@@ -1,0 +1,57 @@
+参数,模型表或字段,源系统,源字段或视图,更新频率,粒度,参数所有者,口径状态,备注
+JPH档,jph_options.csv:jph,Toolbox,线平衡/Layout,月,车型x工位,IE Department,已对齐,Toolbox 能否直接导出待确认
+每班定员,jph_options.csv:heads_per_shift,Toolbox,SAM 分析结果,月,车型x工位,IE Department,待确认,依赖 SAM 工时测定
+运行功率,jph_options.csv:run_kw,设备台账/能耗计量,设备铭牌+电表,年,车间,设备工程,自设值,需与能源系统核对
+每班有效小时,shift_options.csv:eff_hours_per_shift,IE,标准工时与班制,年,车间,IE Department,自设值,含休息与班前会
+夜班补贴,shift_options.csv:night_allowance_per_head,HR,薪酬政策,年,全班,HR,自设值,
+福利社保系数,global_params.csv:burden_rate,HR,五险一金与福利政策,年,全厂,HR,自设值,示例 1.35 需 HR 确认
+工资,global_params.csv:wage_per_head_month,HR,薪酬标准,年,岗位,HR,自设值,
+加班单价,global_params.csv:ot_rate_per_head_hour,HR,加班政策,年,全班,HR,自设值,
+电价,global_params.csv:elec_price,能源系统,分时电价表,月,全厂,能源管理,自设值,峰谷需按月系数拆分
+工作日,calendar.csv:workdays,生产日历,工厂日历,季,月,计划,已对齐,
+产能上限,capacity_limit.csv:cap,工厂能力评估,IE 能力报告,年,车间x车型x月,IE Department,待确认,
+需求,demand.csv:demand,S&OP,销售计划+订单,月,车型x月,销售计划,自设值,
+缓存上限,shop_params.csv:buffer_cap,物流,线边库容,季,车间,物流,自设值,应含滑橇与货架
+滑橇吊具数,carrier.csv:carriers,物流,WBS/PBS 台账,年,车间,物流,自设值,
+缓存持有成本,shop_params.csv:hold_cost_per_unit_month,财务,存货跌价与仓储费率,年,车间,财务,自设值,
+库存资金率,global_params.csv:capital_rate_month,财务,WACC/资金成本,年,全厂,Group Financial Planning,自设值,集团 WACC 12.3%(FY2024)
+出厂电价,margin.csv 派生 ← price.csv:price,商业,出厂价/VAT/激励,月,车型,商业,自设值,
+物料单价,mat_cost.csv:cost_per_unit,SAP S/4 + Teamcenter,Plant MBOM 用量 x 零件价,月,车型x零件,SAP 主数据,待建,应演进为 BOM x 用量 x 价格
+单车物料,mat_cost.csv:cost_per_unit,同上,汇总,月,车型,财务,自设值,当前为手工汇总值
+边际贡献,margin.csv:margin_per_unit,Group Financial Planning,售价-物料-变动物流-关税+退税,月,车型,Group Financial Planning,待建,口径需财务裁定
+关税,build_margin.py ← tariff.csv:tariff_per_unit,海关/财务,进口关税,年,零件,财务,自设值,
+出口退税,build_margin.py ← rebate.csv:rebate_per_unit,财务,出口退税,年,零件,财务,自设值,
+汇率,build_margin.py ← fx.csv:fx_factor,财务,月度汇率,月,全厂,财务,自设值,
+发运数量,shipping_cap.csv:cap,物流/CASTLE,发运计划与船期,月,车型,物流,自设值,
+发运频次,inbound_params.csv:ship_freq,PLUS/CMP,Ship_Frequency,月,供应商,库存控制,待建,Cycle Stock 限制因子之一
+发运数量参数,inbound_params.csv:ship_qty,PLUS/CMP,Ship_QTY,月,供应商,库存控制,待建,
+单元装载量,inbound_params.csv:unit_load,PLUS/CMP,Unit Load,月,供应商,库存控制,待建,
+多单元倍数,inbound_params.csv:mult_unit_load,PLUS/CMP,MULT_UNIT_LOAD,月,供应商,库存控制,待建,工具已知逻辑缺陷点
+一次合格率,quality.csv:ftt,ATACQ/CM4D,质量 KPI,周,车间,质量,已回测,
+检验点公差合格率,pist.csv:pist,CM4D,PIST,周,工位,质量,待建,PIST 低 → 检验工时/工装跟进
+过程审核 VCPA,vcpa.csv:score,质量,VCPA 审核,季,车间,质量,待建,
+百万分之 PPM,ppm.csv:ppm,质量,PPM,月,车型,质量,待建,
+返修工位数,rework.csv:stations,质量/IE,返修区布局,年,车间,质量,待建,
+返修工时,rework.csv:hours_per_unit,IE,返修标准工时,年,车间,IE Department,待建,
+报废成本,rework.csv:scrap_cost_per_unit,财务/质量,报废处置成本,年,车型,财务,待建,
+设备折旧,asset.csv:monthly_depreciation,财务,资产台账折旧,年,车间,财务,待建,启用后须从 OH 扣除避免重复
+模具摊销,tooling.csv:monthly_amount,财务,工装摊销,年,车型,财务,待建,
+FTT 爬坡,ramp.csv:factor,项目/IE,导入爬坡计划,月,车间,项目,自设值,应由 change_note 驱动
+车型变更事件,change_note.csv,PLM(Teamcenter),Change Note/ECN,事件,车型,产品工程,待建,SENT_TO 生产系统
+车型工时等级与颜色,models.csv,工艺/Toolbox,配置负荷+颜色,年,车型,IE Department,待建,
+技能矩阵,skill.csv,HR/IE,技能矩阵与持证台账,季,工位,HR,待建,
+工位骨架,bop.csv,Teamcenter,Plant BOP 工位/工序/METarget,变更,工位,产品工程,待建,
+实际产量,actual.csv:volume,CASTLE,生产订单实绩,日,车间x月,生产,已回测,
+实际工时与产出,actual.csv,CASTLE,工位实绩,日,工位,生产,待建,
+零件状态（返修/报废）,rework 相关,Castle SAP,Part Status Tracking,日,零件,质量,待建,零件级粒度优于我模型
+成本实际值,对账用,SAP S/4,COGS 科目,月,科目,财务,待建,配合 account_map.csv 使用
+间接人员定员,indirect.csv:heads_per_shift,IE/生产,班组长与间接岗定员,年,JPH档,IE Department,待建,班组长/质量/维修/物流
+换型参数,changeover.csv,IE/工艺,换型时间与费用,年,车间,IE Department,待建,mode=decision 时切换次数为决策变量
+物流模式,logistics.csv,物流,发运方式与运价,年,运输方式,物流,待建,scope=outbound/inbound；趟费与包车月费
+OEE 时间与性能,oee.csv:time_rate/perf_rate,生产/设备,OEE 实测,月,车间,生产,待建,时间开动率与性能开动率分开
+出勤率,attendance.csv:rate,HR/生产,实到与定员,月,车间,HR,待建,春节等季节性需单独取值
+限产开动率,avail.csv:rate,生产/政府,环保限产与政策停产,事件,车间,生产,待建,与场景旋钮 avail 叠加
+换色批量,color_batch.csv:batch,工艺,最小喷涂批量,年,颜色,工艺,待建,weekly.py 用
+车型工时等级与颜色,models.csv:config_load/color,工艺/Toolbox,配置负荷+颜色,年,车型,IE Department,待建,weekly.py 用
+工厂定义,plant.json,工厂/IT,车间链与版本,变更,工厂,工厂 key user,已对齐,不涉及业务参数
+场景库,scenario_library.csv,模型,情景定义,变更,情景,AI&Data,已对齐,旋钮见 scenarios.py

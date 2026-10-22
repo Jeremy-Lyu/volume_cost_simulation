@@ -1,0 +1,8 @@
+# 与仓库根 .gitignore 对齐；在本目录单独操作时也生效
+.cache/
+.venv/
+__pycache__/
+.pytest_cache/
+output/
+*.pyc
+logs/

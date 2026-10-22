@@ -1,0 +1,22 @@
+{
+  "plant_id": "DEMO_B",
+  "plant_name": "示例工厂B（虚构，示例数据）",
+  "shops": [
+    "BIW",
+    "PNT",
+    "TCF"
+  ],
+  "shop_names": {
+    "BIW": "焊装",
+    "PNT": "涂装",
+    "TCF": "总装"
+  },
+  "core_version": "core-1.0",
+  "config_version": "DEMO_B-cfg-0.1-示例",
+  "owner": "⚠ 待指定（工厂 key user）",
+  "local_rules": {
+    "冲压": "外购，不建模（示例假设）",
+    "加班上限": "32h/月（示例 ⚠）"
+  },
+  "note": "虚构示例工厂，数字为示例数据"
+}

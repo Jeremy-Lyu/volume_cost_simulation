@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>产量成本模拟器 · 示例</title>
+<style>
+  :root { --bg:#eef2f5; --ink:#1a2330; --muted:#5b6b7c; --line:#d7e0e8; --card:#fff; --green:#0c6b52; --red:#9a3412; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.55 "PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif; color:var(--ink); background:var(--bg); }
+  .wrap { max-width:1180px; margin:0 auto; padding:28px 24px 48px; }
+  h1 { font-size:26px; font-weight:650; margin:0 0 6px; letter-spacing:-0.02em; }
+  h2 { font-size:18px; margin:28px 0 6px; }
+  .lead { margin:0; color:var(--muted); max-width:720px; }
+  .grid { display:grid; gap:14px; margin-top:14px; }
+  .g5 { grid-template-columns:repeat(6,1fr); }
+  .g5 .card:first-child { grid-column:span 6; }
+  .g5 .card { grid-column:span 3; }
+  .g4 { grid-template-columns:repeat(4,1fr); }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .card h3 { margin:0 0 2px; font-size:16px; }
+  .knob { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .nums { display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 10px; }
+  .nums b { font-size:20px; font-variant-numeric:tabular-nums; font-weight:650; }
+  .nums span { display:block; color:var(--muted); font-size:12px; }
+  .read { background:#f6faf8; border-radius:8px; padding:10px 12px; margin:0; }
+  .read strong { color:var(--green); font-weight:650; }
+  ul { margin:8px 0 0; padding-left:18px; }
+  li { margin:4px 0; }
+  .tag { display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; background:#e7f5f0; color:var(--green); margin-bottom:8px; }
+  .tag.warn { background:#fff4e8; color:var(--red); }
+  .down { color:var(--green); } .up { color:var(--red); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  @media (max-width:980px) {
+    .g5, .g4, .g3 { grid-template-columns:1fr; }
+    .g5 .card, .g5 .card:first-child { grid-column:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>产量成本模拟器 · 示例</h1>
+  <p class="lead">数字来自已经解出的样例，不是工厂实数。每一张卡片先说这次在问什么，再说模型改了什么、人工和能源各动了多少、要不要据此改排产。工厂要换基数、策略或公式，按 DOC/工厂改数与重算指南.md，改完重算，这页不会自动更新。</p>
+
+  <h2>五个问题，结果摊开看</h2>
+  <p class="lead">基准是对照。另外四张只改一个条件。总装班次没变，就不必为这件事重排总装。</p>
+  <div class="grid g5" id="scenes"></div>
+
+  <h2>人工和能源：省在哪</h2>
+  <p class="lead">同样一个月、焊装加涂装做 1 万台。少开一个班，省下来的几乎全是人工。看节约要看这两个科目，不要看含制造费用的总成本。</p>
+  <div class="grid g4">
+    <article class="card">
+      <span class="tag">人工</span>
+      <h3>少开一个班</h3>
+      <p class="nums"><span><b class="down">−245 万/月</b>三班 992 万 → 两班 747 万</span></p>
+      <p class="read">每个工作日都开三班，人和班车、外包都按三班付。改成 36 JPH × 两班，同样 1 万台做得完，人工少两成多。这是这次样例里最清楚的人工节约。</p>
+    </article>
+    <article class="card">
+      <span class="tag">能源</span>
+      <h3>烘房小时少了</h3>
+      <p class="nums"><span><b class="down">−16 万/月</b>能源 392 → 377；天然气 −24 万</span></p>
+      <p class="read">节拍提高、开工天数不变，烘房开的小时少，气费下降。电和需量电费几乎不降，启炉只多 2 万。所以「改班次省电」在这个样例里不成立。</p>
+    </article>
+    <article class="card">
+      <span class="tag">全年已计入</span>
+      <h3>停工日</h3>
+      <p class="nums"><span><b>888 万</b>少发的人工</span><span><b>370 万</b>少耗的能源</span></p>
+      <p class="read">基准年里，有的月份不必天天开满。正式工停工日按 70% 发薪、派遣不发，这是假设。这两笔可以当节约看，但比例要等 HR 确认。</p>
+    </article>
+    <article class="card">
+      <span class="tag warn">先不要用</span>
+      <h3>跨车间借调</h3>
+      <p class="nums"><span><b>约 892 万</b>月度净节省</span></p>
+      <p class="read">月度模型只把人·天凑平，不看同一天有没有空闲的人。按天核对后，焊装和涂装同一天开工，借调是 0。讲节约时把这笔拿掉。</p>
+    </article>
+  </div>
+
+  <h2>策略：愿意为稳定多付多少</h2>
+  <div class="grid g3">
+    <article class="card">
+      <h3>成本优先</h3>
+      <p class="nums"><span><b>44,288 万</b>最便宜</span></p>
+      <p class="read">只问成本最低。相邻月人数可以翻倍，招人和培训都没算进去。适合当对照，不适合直接当人力方案。</p>
+    </article>
+    <article class="card">
+      <h3>保人力</h3>
+      <p class="nums"><span><b>44,306 万</b>只多 18 万</span></p>
+      <p class="read">人数每个月变化不超过 5%，用加班顶住波动，不延期。样例里，稳住人头几乎不用多花钱。若不能接受大招大裁，先看这个。</p>
+    </article>
+    <article class="card">
+      <h3>稳定优先</h3>
+      <p class="nums"><span><b>44,746 万</b>多 458 万</span></p>
+      <p class="read">人数不逐月跳，少加班，但有 524 台·月要晚一个月交。多付的钱主要是换「晚交付」和「少加班」，不是换产量。</p>
+    </article>
+  </div>
+
+  <h2>压力：坏事来了还交不交得上</h2>
+  <div class="grid g4">
+    <article class="card">
+      <h3>旺季冲量</h3>
+      <p class="knob">9–12 月需求 +15%</p>
+      <p class="read">46,186 万，车交完。瓶颈仍在焊装。旺季单独来，样例里不用丢单。</p>
+    </article>
+    <article class="card">
+      <h3>缺芯</h3>
+      <p class="knob">4–5 月零件只有需求的 70%</p>
+      <p class="read">不丢单，但延期 3,714 台·月。零件断供在样例里表现为晚交，不是当年流失。</p>
+    </article>
+    <article class="card">
+      <h3>焊装停一周</h3>
+      <p class="knob">6 月停 5 个工作日</p>
+      <p class="read">44,389 万，前后月把产量补上，没有流失。停一周在这个库存和加班上限里还能扛住。</p>
+    </article>
+    <article class="card">
+      <h3>组合冲击</h3>
+      <p class="knob">旺季 + 缺芯 + 限电叠在一起</p>
+      <p class="read">唯一明显丢单：流失 1,879 台，瓶颈从焊装转到涂装。单看某一件还能交，叠在一起就交不完。</p>
+    </article>
+  </div>
+  <p class="lead" style="margin-top:12px">策略和压力是早先保存的样例，基准 44,288 万。上面五个场景是另一次求解，基准 44,287 万，差 1 万，在求解容差里。</p>
+</div>
+<script>
+const S = {
+  "基准": {h:"正常一年怎么排", knob:"什么都不改", cost:44287, unit:3691, vol:"12 万台",
+    read:"总装全年 36 JPH × 两班，12 万台交完，没有流失，也没有延期。焊装 2 月和 8 月降到一班，涂装 5 月和 10 月开到三班，冲压只在 10 月开两班。人工净额约 1.73 亿，能源净额 5,139 万。制造费用 2.05 亿几乎不动，所以讲节约不要看 4.43 亿这个总数。"},
+  "需求 +10%": {h:"订单多一成，还交得上吗", knob:"全年需求 ×1.1", cost:47399, d:"+3,112 万", unit:3591, vol:"13.2 万台",
+    read:"交得上，缺口是 0。总装仍是 36 JPH × 两班，不必为多出来的一成订单改总装档位。涂装有多个月开到三班，焊装不再降到一班。单车从 3,691 降到 3,591 元，是固定费用被摊薄，不是单台变便宜了。人工和能源一起上升，因为多做了 1.2 万台。"},
+  "需求 −10%": {h:"订单少一成，要不要降档", knob:"全年需求 ×0.9", cost:41155, d:"−3,132 万", unit:3811, vol:"10.8 万台",
+    read:"要降。焊装和总装全年从 36 JPH 降到 30 JPH × 两班，没有丢单，有 90 台·月晚交。单车升到 3,811 元，人没有按产量同比例减掉。天然气只从 985 万降到 937 万：节拍变低以后，烘房按小时烧，单台用气反而更费。"},
+  "电价 +20%": {h:"电价涨了，要不要改班次", knob:"电价 ×1.2", cost:45060, d:"+773 万", unit:3755, vol:"12 万台",
+    read:"不必改总装。全年仍是 36 JPH × 两班，12 万台照交。能源净额从 5,139 万升到约 5,887 万，多出来的是电价，不是多开了班。样例里靠调班次躲峰电，省不下这笔。"},
+  "工资 +5%": {h:"工资涨了，要不要改班次", knob:"月薪 ×1.05", cost:45127, d:"+840 万", unit:3761, vol:"12 万台",
+    read:"不必改总装，仍是 36 JPH × 两班。人工变贵，加班也略贵，方案几乎不动。工资上涨在这个样例里只改成本，不改排产。"}
+};
+const root = document.getElementById("scenes");
+for (const [name, r] of Object.entries(S)) {
+  const el = document.createElement("article");
+  el.className = "card";
+  el.innerHTML = `<span class="tag">${name}</span><h3>${r.h}</h3><p class="knob">${r.knob}</p>
+    <p class="nums"><span><b>${r.cost.toLocaleString("zh-CN")} 万</b>${r.d ? "比基准 "+r.d : "对照"}</span>
+    <span><b>${r.unit.toLocaleString("zh-CN")} 元</b>单车 · ${r.vol}</span></p>
+    <p class="read">${r.read}</p>`;
+  root.appendChild(el);
+}
+</script>
+</body>
+</html>

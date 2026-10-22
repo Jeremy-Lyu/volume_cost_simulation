@@ -1,0 +1,5 @@
+shop,dispatch_share,stopday_pay_regular,stopday_pay_dispatch,borrow_limit,paid_days_month,note
+STP,0.20,0.70,0.00,0.10,21.75,⚠ 行业假设：派遣+临时工合计 20%（法规派遣上限 10%，待 HR 确认口径）；停工日正式工发 70%、派遣 0%；跨车间借调上限 10%
+BIW,0.20,0.70,0.00,0.10,21.75,⚠ 同上
+PNT,0.20,0.70,0.00,0.10,21.75,⚠ 同上
+TCF,0.20,0.70,0.00,0.10,21.75,⚠ 同上

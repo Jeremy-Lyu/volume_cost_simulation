@@ -1,0 +1,5 @@
+shop,mode,setups_per_month,hours_per_setup,cost_per_setup
+STP,fixed,2,0.5,8000
+BIW,fixed,2,0.3,3000
+PNT,color,0,0.25,6000
+TCF,fixed,2,0.2,2000
