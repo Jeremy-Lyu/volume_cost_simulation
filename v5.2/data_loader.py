@@ -4,7 +4,7 @@ DATA = os.path.join(os.path.dirname(__file__), "data")
 SHOPS = ["STP", "BIW", "PNT", "TCF"]   # 默认车间链：冲压→焊装→涂装→总装（data/plant.json 可覆盖）
 
 def load(data_dir=None):
-    """data_dir=工厂配置包目录（默认 data/ = 台州试点示例）。plant.json 定义工厂ID、车间链、版本；没有就用默认车间链。
+    """data_dir=工厂配置包目录（默认 data/ = 示例配置包）。plant.json 定义工厂ID、车间链、版本；没有就用默认车间链。
     多工厂复制：换一个配置包目录即可，核心代码不改（第 21 节）。"""
     base = data_dir or DATA
     def _r(n):

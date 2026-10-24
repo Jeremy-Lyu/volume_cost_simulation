@@ -1,5 +1,5 @@
 """工厂配置包检查（多工厂复制，第 21 节）：结构校验 + 业务规则校验 + 就绪度打分（示例）
-用法：python3 plant_check.py [配置包目录]   默认 data/（台州试点示例）
+用法：python3 plant_check.py [配置包目录]   默认 data/（示例配置包）
 输出：控制台报告 + output/readiness_<plant_id>.md
 说明：核心标准 = 下面的 SCHEMA（文件、字段）和 RULES（业务规则）；工厂只提供数据，不改代码。"""
 import csv, json, os, sys

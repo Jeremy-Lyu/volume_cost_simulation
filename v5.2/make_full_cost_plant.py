@@ -1,5 +1,5 @@
 """生成「全成本口径」示例配置包 plants/FULL_COST/（示例数据，非真实数据）
-在台州示例（data/）基础上启用 R7–R14 全部可选扩展，演示：
+在示例配置包（data/）基础上启用 R7–R14 全部可选扩展，演示：
   物料 / 福利社保 / 间接人工 / 质量FTT / 爬坡 / 换型换色 / 滑橇缓存 / 发运能力与模式混装 /
   库存资金 / 保修 / 碳成本 / 设备折旧 / 模具摊销
 说明：启用 asset.csv 后把 oh_fixed_month 中的折旧扣除，避免重复计（示例按原 OH 的 40% 计）
@@ -60,7 +60,7 @@ wr("models.csv", [{"model": "V446K", "config_load": "high", "color": "白"},
                   {"model": "V452", "config_load": "low", "color": "黑"}])
 wr("color_batch.csv", [{"color": "白", "batch": 400}, {"color": "黑", "batch": 300}])
 wr("capacity_component.csv", [{"plant": p, "model": "V446K", "month": 10, "max_orders": c}
-                              for p, c in [("Chengdu", 5000), ("Daqing", 4800), ("Luqiao", 4200)]])
+                              for p, c in [("PlantA", 5000), ("PlantB", 4800), ("PlantC", 4200)]])
 wr("part_price.csv", [{"model": m, "month": 0, "price": px, "currency": cur, "fx_rate": fx}
                       for m, px, cur, fx in [("V446K", 10000, "EUR", 7.6), ("V451", 82000, "CNY", 1), ("V452", 11000, "USD", 8)]])
 # 9 设备折旧 + 模具摊销（示例）；并把 OH 里的折旧扣除避免重复计
@@ -83,7 +83,7 @@ wr("margin.csv", [{"model": m, "month": 0, "margin_per_unit": v} for m, v in
 json.dump({"plant_id": "FULL_COST", "plant_name": "全成本口径示例（虚构，示例数据）",
            "shops": ["STP", "BIW", "PNT", "TCF"], "core_version": "core-1.0",
            "config_version": "FULL_COST-cfg-0.1-示例", "owner": "⚠ 待指定（工厂 key user）",
-           "note": "在台州示例基础上启用 v2 可选扩展：物料/福利/间接人工/FTT/爬坡/换型/滑橇/发运/资金/保修/碳/折旧/模具。"
+           "note": "在示例配置包基础上启用 v2 可选扩展：物料/福利/间接人工/FTT/爬坡/换型/滑橇/发运/资金/保修/碳/折旧/模具。"
                    "option：启用折旧后 oh_fixed 已扣除折旧部分。"},
           open(os.path.join(DST, "plant.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 import report as rp

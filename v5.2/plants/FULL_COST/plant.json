@@ -10,5 +10,5 @@
   "core_version": "core-1.0",
   "config_version": "FULL_COST-cfg-0.1-示例",
   "owner": "⚠ 待指定（工厂 key user）",
-  "note": "在台州示例基础上启用 v2 可选扩展：物料/福利/间接人工/FTT/爬坡/换型/滑橇/发运/资金/保修/碳/折旧/模具。option：启用折旧后 oh_fixed 已扣除折旧部分。"
+  "note": "在示例配置包基础上启用 v2 可选扩展：物料/福利/间接人工/FTT/爬坡/换型/滑橇/发运/资金/保修/碳/折旧/模具。option：启用折旧后 oh_fixed 已扣除折旧部分。"
 }

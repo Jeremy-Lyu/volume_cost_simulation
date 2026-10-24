@@ -1,6 +1,6 @@
 {
   "plant_id": "TZ",
-  "plant_name": "台州（试点，示例数据）",
+  "plant_name": "示例工厂（试点，示例数据）",
   "shops": ["STP", "BIW", "PNT", "TCF"],
   "shop_names": {"STP": "冲压", "BIW": "焊装", "PNT": "涂装", "TCF": "总装"},
   "core_version": "core-1.0",

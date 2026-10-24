@@ -1,5 +1,5 @@
 """对任意工厂配置包跑基准测算 + 回测对账（示例）
-用法：python3 run_plant.py plants/DEMO_B   （不带参数 = data/ 台州示例）
+用法：python3 run_plant.py plants/DEMO_B   （不带参数 = data/ 示例配置包）
 步骤：配置包检查(plant_check) → 基准求解 → 若有 actual.csv，按 车间×月 对比测算 vs 实际，偏差超阈值标红
 输出：output/plant_<id>_plan.csv、output/plant_<id>_backtest.csv"""
 import csv, os, sys

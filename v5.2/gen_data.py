@@ -1,4 +1,4 @@
-"""生成示例数据（示例数据，非真实沃尔沃数据）"""
+"""生成示例数据（示例数据，非真实数据）"""
 import csv, os
 D = os.path.join(os.path.dirname(__file__), "data")
 def w(name, header, rows):

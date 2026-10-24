@@ -1,6 +1,6 @@
 参数,模型表或字段,源系统,源字段或视图,更新频率,粒度,参数所有者,口径状态,备注
-JPH档,jph_options.csv:jph,Toolbox,线平衡/Layout,月,车型x工位,IE Department,已对齐,Toolbox 能否直接导出待确认
-每班定员,jph_options.csv:heads_per_shift,Toolbox,SAM 分析结果,月,车型x工位,IE Department,待确认,依赖 SAM 工时测定
+JPH档,jph_options.csv:jph,线平衡工具,线平衡/Layout,月,车型x工位,IE Department,已对齐,线平衡工具 能否直接导出待确认
+每班定员,jph_options.csv:heads_per_shift,线平衡工具,SAM 分析结果,月,车型x工位,IE Department,待确认,依赖 SAM 工时测定
 运行功率,jph_options.csv:run_kw,设备台账/能耗计量,设备铭牌+电表,年,车间,设备工程,自设值,需与能源系统核对
 每班有效小时,shift_options.csv:eff_hours_per_shift,IE,标准工时与班制,年,车间,IE Department,自设值,含休息与班前会
 夜班补贴,global_params.csv:night_allowance_per_head_night；夜班个数在 shift_options.csv:night_shifts,HR,薪酬政策,年,全班,HR,自设值,shift_options 的 night_allowance_per_head 不参与金额
@@ -27,9 +27,9 @@ JPH档,jph_options.csv:jph,Toolbox,线平衡/Layout,月,车型x工位,IE Departm
 发运数量参数,inbound_params.csv:ship_qty,PLUS/CMP,Ship_QTY,月,供应商,库存控制,待建,
 单元装载量,inbound_params.csv:unit_load,PLUS/CMP,Unit Load,月,供应商,库存控制,待建,
 多单元倍数,inbound_params.csv:mult_unit_load,PLUS/CMP,MULT_UNIT_LOAD,月,供应商,库存控制,待建,工具已知逻辑缺陷点
-一次合格率,quality.csv:ftt,ATACQ/CM4D,质量 KPI,周,车间,质量,已回测,
-检验点公差合格率,pist.csv:pist,CM4D,PIST,周,工位,质量,待建,PIST 低 → 检验工时/工装跟进
-过程审核 VCPA,vcpa.csv:score,质量,VCPA 审核,季,车间,质量,待建,
+一次合格率,quality.csv:ftt,ATACQ/尺寸系统,质量 KPI,周,车间,质量,已回测,
+检验点公差合格率,pist.csv:pist,尺寸系统,PIST,周,工位,质量,待建,PIST 低 → 检验工时/工装跟进
+过程审核,vcpa.csv:score,质量,过程审核,季,车间,质量,待建,
 百万分之 PPM,ppm.csv:ppm,质量,PPM,月,车型,质量,待建,
 返修工位数,rework.csv:stations,质量/IE,返修区布局,年,车间,质量,待建,
 返修工时,rework.csv:hours_per_unit,IE,返修标准工时,年,车间,IE Department,待建,
@@ -38,7 +38,7 @@ JPH档,jph_options.csv:jph,Toolbox,线平衡/Layout,月,车型x工位,IE Departm
 模具摊销,tooling.csv:monthly_amount,财务,工装摊销,年,车型,财务,待建,
 FTT 爬坡,ramp.csv:factor,项目/IE,导入爬坡计划,月,车间,项目,自设值,应由 change_note 驱动
 车型变更事件,change_note.csv,PLM(Teamcenter),Change Note/ECN,事件,车型,产品工程,待建,SENT_TO 生产系统
-车型工时等级与颜色,models.csv,工艺/Toolbox,配置负荷+颜色,年,车型,IE Department,待建,
+车型工时等级与颜色,models.csv,工艺/线平衡工具,配置负荷+颜色,年,车型,IE Department,待建,
 技能矩阵,skill.csv,HR/IE,技能矩阵与持证台账,季,工位,HR,待建,
 工位骨架,bop.csv,Teamcenter,Plant BOP 工位/工序/METarget,变更,工位,产品工程,待建,
 实际产量,actual.csv:volume,CASTLE,生产订单实绩,日,车间x月,生产,已回测,
@@ -52,6 +52,6 @@ OEE 时间与性能,oee.csv:time_rate/perf_rate,生产/设备,OEE 实测,月,车
 出勤率,attendance.csv:rate,HR/生产,实到与定员,月,车间,HR,待建,春节等季节性需单独取值
 限产开动率,avail.csv:rate,生产/政府,环保限产与政策停产,事件,车间,生产,待建,与场景旋钮 avail 叠加
 换色批量,color_batch.csv:batch,工艺,最小喷涂批量,年,颜色,工艺,待建,weekly.py 用
-车型工时等级与颜色,models.csv:config_load/color,工艺/Toolbox,配置负荷+颜色,年,车型,IE Department,待建,weekly.py 用
+车型工时等级与颜色,models.csv:config_load/color,工艺/线平衡工具,配置负荷+颜色,年,车型,IE Department,待建,weekly.py 用
 工厂定义,plant.json,工厂/IT,车间链与版本,变更,工厂,工厂 key user,已对齐,不涉及业务参数
 场景库,scenario_library.csv,模型,情景定义,变更,情景,AI&Data,已对齐,旋钮见 scenarios.py
