@@ -1,10 +1,9 @@
 """策略对比 + 蒙特卡洛压力测试（示例数据）"""
-import copy, os, random, statistics as stt, data_loader as dl, model_builder as mb, report as rp
+import copy, os, random, statistics as stt, data_loader as dl, engine, report as rp
 from scenarios import apply_knobs
 OUT = os.path.join(os.path.dirname(__file__), "output")
 def run(d, **kw):
-    P, v = mb.build(d, **kw); st, obj = mb.solve(P, d); plan, cost, out, sh = rp.extract(d, v)
-    return st, obj, plan, cost, out, sh, v
+    return engine.solved(d, **kw)
 def metrics(name, d, res):
     st, obj, plan, cost, out, sh, _ = res
     swings = []

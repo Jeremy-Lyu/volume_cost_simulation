@@ -9,7 +9,7 @@ import os as _root_os, sys as _root_sys
 _root_sys.path.insert(0, _root_os.path.dirname(_root_os.path.dirname(_root_os.path.abspath(__file__))))
 import copy, csv, os
 import pulp
-import data_loader as dl, model_builder as mb, report as rp
+import data_loader as dl, engine, report as rp
 H = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); OUT = os.path.join(H, "output")
 SCALES = [0.6, 0.8, 1.0, 1.2, 1.4]
 CURVE_TIME_LIMIT = 30          # 曲线采样每次求解时限（秒），避免离线分析跑太久
@@ -18,8 +18,7 @@ def cost_at(pkg, scale):
     d = copy.deepcopy(dl.load(os.path.join(H, pkg)))
     d["demand"] = {k: v * scale for k, v in d["demand"].items()}
     d["g"]["solver_time_limit"] = CURVE_TIME_LIMIT
-    P, v = mb.build(d); st, obj = mb.solve(P, d)
-    plan, cost, out, sh = rp.extract(d, v)
+    st, obj, _plan, _cost, out, sh, _v = engine.solved(d)
     return obj, out, sh, st
 def build_curve(pkg):
     rows = []

@@ -1,12 +1,14 @@
-"""块10：优化求解器（MILP）
-决策：每车间每月选 1 个(JPH档,班次)组合 y；各车型产量 x；加班小时 ot；缺口 short；车间间缓存 inv；
-      成品库存 fginv 与发货量 ship（配置发运能力/成品持有时启用）；
-      发运趟次 trips（成品，scope=outbound）/入厂趟次 trips_in（有线前库存时覆盖叫料到货，否则覆盖首车间产量）；
-      叫料 calloff 与线前库存 line_inv；颜色开工 onc 与切换次数 st（color=按颜色，decision=按车型）；
-      碳超配额量 co2over；订单上限取能力分量交集，槽位上限来自周计划回写
-目标：min 总成本 − 边际贡献×交付 + 缺口惩罚 + 碳配额购买费
-扩展 v2/v3（可选，未配置时线性结构与原版一致）：边际贡献、发运能力、成品库、物流模式混装、
-  返修区并联约束、换型决策化、碳配额交易、OEE/出勤拆分、人数非对称变化"""
+"""月度模型。每个车间、每个月只选一个档 y：JPH × 班次（0/1/2/3）。
+
+build(d) 按这个顺序往同一个问题上加式子，缺表的段落整段跳过，基础口径不变：
+  1. 每个候选档的人工、能源、制造费用，加进目标
+  2. 停工日、借调、换档（有 labor_flex / jph_switch 才建）
+  3. 缓存、成品、物流、固定制造费用；物料不进目标
+  4. 约束：每月一档、产能、订单平衡、车间之间的缓存平衡
+  5. 可选：人数变化上限、JPH 相邻月只变一档、班次按季固定、权重、锁定已选方案
+
+solve(P, d) 调用 HiGHS，没有就用 CBC。日常命令不直接调这两个函数，走 engine.solved。
+目标是成本最低。配了 margin.csv 之后，目标改为成本减去边际贡献。"""
 import pulp
 import cost_functions as cf
 def build(d, jph_step=False, shift_quarter=False, util_cap=None, head_change=None, fix_y=None,
@@ -250,7 +252,6 @@ def build(d, jph_step=False, shift_quarter=False, util_cap=None, head_change=Non
             if use_fg:   # 成品库平衡：上月成品 + 本月产量 = 本月发货 + 本月成品
                 prev = fginv[(m,t-1)] if t > T[0] else 0
                 P += prev + x[(S[-1],m,t)] == ship[(m,t)] + fginv[(m,t)], f"fg_{m}_{t}"
-                pass
                 sc = cf.ship_cap(d, m, t)     # 发运能力上限（船期/承运商/车位）
                 if sc is not None: P += ship[(m,t)] <= sc, f"shipcap_{m}_{t}"
             else:

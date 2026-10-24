@@ -1,12 +1,12 @@
 """块11：场景模拟——基准 + 需求±10% + 电价+20% + 工资+5%"""
-import os, data_loader as dl, model_builder as mb, report as rp
+import os, data_loader as dl, engine, report as rp
 OUT = os.path.join(os.path.dirname(__file__), "output")
 SCEN = {"基准": {}, "需求+10%": {"demand": 1.1}, "需求-10%": {"demand": 0.9}, "电价+20%": {"elec": 1.2}, "工资+5%": {"wage": 1.05}}
 def main():
     base = dl.load(); summ = []
     for name, kw in SCEN.items():
-        d = dl.scenario(base, **kw); P, v = mb.build(d); st, obj = mb.solve(P, d)
-        plan, cost, out, sh = rp.extract(d, v)
+        d = dl.scenario(base, **kw)
+        st, obj, plan, cost, out, sh, v = engine.solved(d)
         err = rp.selfcheck(d, v, obj); assert not err, f"{name} 守恒自检失败: {err}"
         kp = rp.kpis(d, v, plan, cost, out, obj)
         rp.write_csv(os.path.join(OUT, f"plan_{name}.csv"), plan)

@@ -37,8 +37,8 @@ print("ok", DST)
 
 def make_actual():
     """基准解 → 加 ±3% 扰动（个别月份 +15%）当作示例实际产量，演示回测对账"""
-    import data_loader as dl, model_builder as mb, report as rp
-    d = dl.load(DST); P, v = mb.build(d); mb.solve(P, d); plan, *_ = rp.extract(d, v)
+    import data_loader as dl, engine
+    d = dl.load(DST); st, obj, plan, cost, out, sh, v = engine.solved(d)
     random.seed(7); rows = []
     for r in plan:
         f = random.uniform(0.97, 1.03) * (0.85 if (r["shop"], r["month"]) == ("PNT", 8) else 1)

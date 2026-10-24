@@ -1,12 +1,12 @@
 """压力测试（示例数据）：(a) 场景库 (b) 焊装停线天数扫描 (c) 需求上限"""
 import os as _root_os, sys as _root_sys
 _root_sys.path.insert(0, _root_os.path.dirname(_root_os.path.dirname(_root_os.path.abspath(__file__))))
-import os, data_loader as dl, model_builder as mb, report as rp, cost_functions as cf
+import os, data_loader as dl, engine, report as rp, cost_functions as cf
 from scenarios import apply_knobs, load_library
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output")
 def solve(d, tl=30):
-    d["g"]["solver_time_limit"] = tl; P, v = mb.build(d); st, obj = mb.solve(P, d)
-    plan, cost, out, sh = rp.extract(d, v); return st, obj, plan, cost, out, sh, v
+    d["g"]["solver_time_limit"] = tl
+    return engine.solved(d)
 def maxcap(d, s, t):  # 该车间该月最大可能产能（最高档 × 三班 × 加班上限）
     return max(cf.capacity(d, s, o, k, t) + cf.ot_units(d, s, o, t, d["g"]["ot_hard_cap_per_head_month"] * k) for o in d["jph"][s] for k in d["shift"])
 def bottleneck(d, plan, v):

@@ -2,7 +2,7 @@ import sys, os, copy, pytest
 PROTO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROTO)
 sys.path.insert(0, os.path.join(PROTO, "lab"))
-import data_loader as dl, model_builder as mb, report as rp, cost_functions as cf
+import data_loader as dl, engine
 
 def subset(d, months):
     e = copy.deepcopy(d); e["months"] = list(months)
@@ -11,9 +11,8 @@ def subset(d, months):
     return e
 
 def solve(d, **kw):
-    P, v = mb.build(d, **kw); st, obj = mb.solve(P, d)
-    plan, cost, out, sh = rp.extract(d, v)
-    return dict(P=P, v=v, st=st, obj=obj, plan=plan, cost=cost, out=out, sh=sh)
+    st, obj, plan, cost, out, sh, v = engine.solved(d, **kw)
+    return dict(v=v, st=st, obj=obj, plan=plan, cost=cost, out=out, sh=sh)
 
 @pytest.fixture(scope="session")
 def base(): return dl.load(os.path.join(PROTO, "data"))

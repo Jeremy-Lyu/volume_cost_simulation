@@ -1,7 +1,7 @@
 """练习：在内存中改参数后重新求解，与基准对比（示例数据）"""
 import os as _root_os, sys as _root_sys
 _root_sys.path.insert(0, _root_os.path.dirname(_root_os.path.dirname(_root_os.path.abspath(__file__))))
-import copy, os, data_loader as dl, model_builder as mb, report as rp
+import copy, os, data_loader as dl, engine, report as rp
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output")
 def e1(d):  # 加班上限 36 → 60 小时/月（所有车间）
     dl.set_ot_cap(d, 60)
@@ -17,8 +17,9 @@ EX = {"练习0_基准": lambda d: None, "练习1_加班上限60h": e1, "练习2_
 if __name__ == "__main__":
     base = dl.load(); rows = []
     for n, f in EX.items():
-        d = copy.deepcopy(base); f(d); P, v = mb.build(d); st, obj = mb.solve(P, d)
-        plan, cost, out, sh = rp.extract(d, v); rp.write_csv(os.path.join(OUT, f"plan_{n}.csv"), plan)
+        d = copy.deepcopy(base); f(d)
+        st, obj, plan, cost, out, sh, v = engine.solved(d)
+        rp.write_csv(os.path.join(OUT, f"plan_{n}.csv"), plan)
         js = {s: "/".join(f"{int(r['jph'])}x{r['shifts']}" for r in plan if r["shop"] == s) for s in d["shops"]}
         rows.append(dict(练习=n, 状态=st, 总成本_万元=round(obj/1e4), 产量=round(out), 缺口=round(sh), 单车_元=round(obj/out),
                          加班_万元=round(cost["加班"]/1e4), 能源_万元=round((cost["能源固定"]+cost["能源变动"])/1e4), 缓存持有_万元=round(cost["缓存持有"]/1e4), **{s: js[s] for s in d["shops"]}))

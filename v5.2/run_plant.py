@@ -3,13 +3,13 @@
 步骤：配置包检查(plant_check) → 基准求解 → 若有 actual.csv，按 车间×月 对比测算 vs 实际，偏差超阈值标红
 输出：output/plant_<id>_plan.csv、output/plant_<id>_backtest.csv"""
 import csv, os, sys
-import plant_check as pc, data_loader as dl, model_builder as mb, report as rp
+import plant_check as pc, data_loader as dl, engine, report as rp
 H = os.path.dirname(os.path.abspath(__file__)); TH = 0.05   # 偏差阈值 5%（示例 ⚠）
 def main(base):
     lv = pc.main(base)
     if lv.startswith(("L0", "L1")): print("\n就绪度不足，先补数据"); return
     d = dl.load(base); pid = d["plant"]["plant_id"]
-    P, v = mb.build(d); st, obj = mb.solve(P, d); plan, cost, out, sh = rp.extract(d, v)
+    st, obj, plan, _cost, out, sh, _v = engine.solved(d)
     rp.write_csv(os.path.join(H, "output", f"plant_{pid}_plan.csv"), plan)
     print(f"\n[{pid}] 车间链 {'→'.join(d['shops'])}  状态 {st}  总成本 {obj/1e4:,.0f} 万元  产量 {out:,.0f}  单车 {obj/max(out,1):,.0f} 元  缺口 {sh:.0f}（示例数据）")
     act = os.path.join(base, "actual.csv")

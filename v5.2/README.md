@@ -36,7 +36,7 @@ python3 -m venv .venv
 
 网页打开后有五页：选场景、滑块、对比与决策卡、参数来源、对话。对话只把中文译成旋钮，确认之后才求解。
 
-`run.py` 的时限在 `data/global_params.csv` 的 `solver_time_limit`（示例 120 秒），五个场景通常要数分钟。改完表之后的快速重算是 `run_quick.py`（按文件哈希只跑受影响的层）。策略对比是 `strategies.py`。一批情景在 `lab/factory_analysis.py`，权重扫描在 `lab/run_v5.py`。
+`run.py`、`strategies.py`、`run_plant.py` 都调用 `engine.solved`，解一次，不读缓存。工作台和 `run_quick.py` 调用 `engine.solve_case`，同一个模型，同参数第二次读缓存。时限在 `data/global_params.csv` 的 `solver_time_limit`（示例 120 秒），五个场景通常要数分钟。一批情景在 `lab/factory_analysis.py`，权重扫描在 `lab/run_v5.py`。
 
 ## 结果放哪
 
@@ -55,11 +55,12 @@ python3 -m venv .venv
 | 文件 | 做什么 |
 | :-- | :-- |
 | `data/*.csv`、`plant.json` | 主数据、需求、产能、JPH、班次、工厂配置包 |
+| `engine.py` | 月度求解入口。`solved` 解一次；`solve_case` 是同一个模型加缓存 |
+| `model_builder.py` | 月度模型本身。日常命令不直接调用 |
 | `data_loader.py` | 读表、校验、场景覆盖 |
 | `scenarios.py` | 旋钮 `apply_knobs`，读取 `scenario_library.csv` |
 | `cost_functions.py` | 人力、加班、能源接口、制造费用 |
 | `energy.py` | 浙江分时电价、运行/待机/天然气/启停/需量 |
-| `model_builder.py` | 月度 MILP |
 | `daily.py` | 焊装 → 白车身缓存 → 涂装，按天 |
 | `report.py` | 报表科目、自检 |
 | `run.py` | 五个标准场景，并和 `golden.csv` 比对 |

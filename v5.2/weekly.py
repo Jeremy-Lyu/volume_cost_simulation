@@ -7,7 +7,7 @@
 用法：python3 weekly.py [配置包] [月份] [--apply]   默认 data/ 10，不加 --apply 不回写月模型
 输出：output/weekly_sequence.csv、output/weekly_summary.csv（示例数据）"""
 import csv, json, os
-import data_loader as dl, model_builder as mb, report as rp
+import data_loader as dl, engine, report as rp
 H = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(H, "output")
 DEF_CFG = {"window": 8, "k_high": 5, "color_batch": 200}   # 滑动窗口/高工时上限/颜色批量（示例 ⚠ 需 IE 工艺确认）
 def _o(base, name):
@@ -93,7 +93,7 @@ def _merge_slot_cap(base, caps):
 def main(base="data", month=10, apply=False):
     d = dl.load(os.path.join(H, base)); meta, cb, sk, cfg = load_meta(os.path.join(H, base))
     colors = sorted({meta[m]["color"] for m in d["models"]})
-    P, v = mb.build(d); mb.solve(P, d); plan, cost, out, sh = rp.extract(d, v)
+    _st, _obj, plan, _cost, _out, _sh, _v = engine.solved(d)
     row, vol, shift = weekly_volumes(plan, d, month)
     res = {}
     for mode, tag in (("seq", "方案A_序列优先"), ("color", "方案B_颜色优先")):
@@ -119,7 +119,7 @@ def main(base="data", month=10, apply=False):
         pkg = os.path.join(H, base)
         if apply:
             _merge_slot_cap(pkg, caps)
-            d2 = dl.load(pkg); P2, v2 = mb.build(d2); st2, obj2 = mb.solve(P2, d2)
+            d2 = dl.load(pkg); st2, obj2, _plan2, _cost2, _out2, _sh2, _v2 = engine.solved(d2)
             print(f"已把槽位上限写入 {base}/slot_cap.csv 并重解一次：{st2}，目标 {round((obj2 or 0)/1e4)} 万元")
         else:
             print("序列超限，已写 output/slot_feedback.csv。月模型未重解，槽位上限未回写。确认后加 --apply 才会写入配置包并重解")

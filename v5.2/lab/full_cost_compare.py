@@ -5,14 +5,14 @@
 import os as _root_os, sys as _root_sys
 _root_sys.path.insert(0, _root_os.path.dirname(_root_os.path.dirname(_root_os.path.abspath(__file__))))
 import os
-import data_loader as dl, model_builder as mb, report as rp, cost_functions as cf
+import data_loader as dl, engine, report as rp, cost_functions as cf
 H = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); OUT = os.path.join(H, "output")
 ORDER = ["物料", "人工", "福利社保", "加班", "超限加班溢价", "停线固定", "延期成本", "质量成本", "能源固定", "能源变动", "换型", "班车", "外包",
          "设备折旧", "模具摊销", "物流-成品", "物流-入厂", "碳配额购买",
          "OH", "缓存持有", "成品持有", "库存资金", "保修与碳", "缺口惩罚(流失)"]
 def run(pkg):
-    d = dl.load(os.path.join(H, pkg)); P, v = mb.build(d); st, obj = mb.solve(P, d)
-    plan, cost, out, sh = rp.extract(d, v)
+    d = dl.load(os.path.join(H, pkg))
+    st, obj, plan, cost, out, sh, v = engine.solved(d)
     shipped = sum(var.value() for var in v["ship"].values()) if v.get("ship") else out
     fg = sum(var.value() for var in v["fginv"].values()) if v.get("fginv") else 0.0
     mg = sum(cf.margin(d, m, t) * (v["ship"][(m,t)].value() if v.get("ship") else v["x"][(d["shops"][-1],m,t)].value())
