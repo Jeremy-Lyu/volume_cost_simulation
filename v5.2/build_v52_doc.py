@@ -7,7 +7,7 @@ H = os.path.dirname(os.path.abspath(__file__))
 def run_fmt(p, text):
     for i, seg in enumerate(re.split(r"\*\*", text)):
         r = p.add_run(seg.replace("`", "")); r.bold = bool(i % 2)
-def main(md=os.path.join(H, "docs", "版本记录", "v5.2升级说明.md"), out=os.path.join(H, "docs", "版本记录", "v5.2升级说明.docx")):
+def main(md=os.path.join(os.path.dirname(H), "发布", "版本记录", "v5.2升级说明.md"), out=os.path.join(os.path.dirname(H), "发布", "版本记录", "v5.2升级说明.docx")):
     doc = Document(); st = doc.styles["Normal"]; st.font.name = "Noto Sans CJK SC"; st.font.size = Pt(10.5)
     st.element.rPr.rFonts.set(qn("w:eastAsia"), "Noto Sans CJK SC")
     for nm in ("Title", "Heading 1", "Heading 2", "Heading 3", "List Bullet", "List Number"):

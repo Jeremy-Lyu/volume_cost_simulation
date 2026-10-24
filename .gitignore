@@ -10,7 +10,7 @@
 v5.2/tests/result.txt
 .streamlit/machine_id*
 
-# 本地求解结果与日志（演示样例在 samples/）
+# 本地求解结果与日志（演示样例在 发布/样例/）
 v5.2/output/
 v5.2/logs/
 **/output/logs/
@@ -19,7 +19,7 @@ v5.2/logs/
 archive/
 
 # 不宜公开的背景稿（点名作业标准与专有布局来源）
-DOC/归档/沃尔沃理论背景与业务信息.md
+发布/归档/沃尔沃理论背景与业务信息.md
 
 # 编辑器与本机
 .idea/

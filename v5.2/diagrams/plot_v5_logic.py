@@ -1,7 +1,7 @@
 """v5 逻辑结构图（在 v4 基础上新增 ⑦ v5 决策层）：输入 → 加载/检查 → 场景旋钮 → 模型 → 求解/自检 → 报表输出 → 循环（依据 v4 实际代码，示例数据）"""
 import os, sys; sys.path.insert(0, os.path.dirname(__file__))
 from common import *
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "docs", "版本记录", "v5逻辑结构图.png")
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "发布", "版本记录", "v5逻辑结构图.png")
 fig = plt.figure(figsize=(36, 33)); ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, 1); ax.set_ylim(-0.5, 1); ax.axis("off")
 ax.text(0.5, 0.977, "VCS 产量成本模拟器 v5 · 逻辑结构图（输入 → 计算 → 输出）", ha="center", fontsize=28, fontweight="bold")
 ax.text(0.5, 0.955, "依据 v5 代码（①–⑥ 沿用 v4，⑦ 为 v5 新增） data_loader / plant_check / scenarios / model_builder / report / golden 与 data/*.csv、output/*.csv ｜ 示例数据 ｜ "

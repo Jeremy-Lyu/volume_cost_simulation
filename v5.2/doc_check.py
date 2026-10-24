@@ -10,7 +10,7 @@ import data_loader as dl, cost_functions as cf, energy as E
 
 H = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(H)
-PUB = os.path.join(ROOT, "DOC", "发布")
+PUB = os.path.join(ROOT, "发布", "手册")
 d = dl.load(None)
 
 def rd(p):
@@ -27,12 +27,12 @@ def text(p):
 
 summary = os.path.join(H, "output", "scenario_summary.csv")
 if not os.path.exists(summary):
-    summary = os.path.join(ROOT, "samples", "scenario_summary.csv")
+    summary = os.path.join(ROOT, "发布", "样例", "scenario_summary.csv")
 
 DOCS = {
     "手册": os.path.join(PUB, "工厂运营理论与计算手册-v5.2.docx"),
     "要素拆解": os.path.join(PUB, "产量成本模型-要素拆解-v5.2.docx"),
-    "升级说明": os.path.join(H, "docs", "版本记录", "v5.2升级说明.md"),
+    "升级说明": os.path.join(ROOT, "发布", "版本记录", "v5.2升级说明.md"),
     "图表汇编": os.path.join(PUB, "重要图表汇编-v5.2.docx"),
     "CHANGELOG": os.path.join(H, "CHANGELOG.md"),
 }

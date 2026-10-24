@@ -1,7 +1,7 @@
 """v4 业务架构图：角色泳道 × 月度运作流程 × 输出与决策（依据 v4 实际文件，示例数据）"""
 import os, sys; sys.path.insert(0, os.path.dirname(__file__))
 from common import *
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "docs", "版本记录", "v4业务架构图.png")
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "发布", "版本记录", "v4业务架构图.png")
 fig = plt.figure(figsize=(34, 21)); ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
 ax.text(0.5, 0.975, "VCS 产量成本模拟器 v4 · 业务架构图（角色泳道 × 月度运作 × 输出与决策）", ha="center", fontsize=26, fontweight="bold")
 ax.text(0.5, 0.952, "依据 v4 实际代码与配置包 data/*.csv、output/*.csv ｜ 全部为示例数据 ｜ ⚠ = 暂定参数待业务确认 ｜ R1–R7 = 吕工确认的 7 条业务规则",
