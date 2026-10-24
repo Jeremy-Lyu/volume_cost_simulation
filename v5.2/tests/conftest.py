@@ -1,6 +1,7 @@
 import sys, os, copy, pytest
 PROTO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROTO)
+sys.path.insert(0, os.path.join(PROTO, "lab"))
 import data_loader as dl, model_builder as mb, report as rp, cost_functions as cf
 
 def subset(d, months):
