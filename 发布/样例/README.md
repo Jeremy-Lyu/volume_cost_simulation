@@ -4,6 +4,7 @@
 
 | 文件 | 内容 |
 | :-- | :-- |
+| [设计走读.md](设计走读.md) | 用基准的 10 月，把设计说明落到四车间各一档 |
 | [results_summary.md](results_summary.md) | 五个标准场景的总成本与班次 |
 | [scenario_summary.csv](scenario_summary.csv) | 同上，表格口径 |
 | [决策卡_开停校正.md](决策卡_开停校正.md) | 六个粗参数打开后的决策卡（含「未验证」借调） |
