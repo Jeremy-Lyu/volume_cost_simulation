@@ -39,7 +39,7 @@ rep(F, "- **代码**：未建（审查 §3.5 建议）。", "- **代码**：v5 `
 F = "91_formulas.md"
 rep(F, "| 需量电费 | 月最大需量 kW × 需量电价 | 元 | §6.5 |", """| 需量电费 | 月最大需量 kW × 需量电价（v5.1：同时率 × 运行功率） | 元 | §6.5、§13.5 |
 | 班次分时电价 | Σ 该班小时电价 ÷ 小时数 | 元/kWh | `energy.shift_price`；§13.2 |
-| 单车用气 | gas_run_m3h ÷ (JPH × 开动率) + gas_m3_per_unit | m³/台 | §13.3 |
+| 单车用气 | gas_run_m3h ÷ (JPH × 按天产能折算系数) + gas_m3_per_unit | m³/台 | §13.3 |
 | 启炉一次 | heatup_kwh × 升温电价 + heatup_m3 × 气价 | 元/次 | `energy.startup_cost`；§13.4 |
 | 停炉临界间隔 | 启炉一次 ÷ (保温每小时 − 停炉每小时) | h | `energy.breakeven_hours`；§13.4 |""")
 open(T + "/91_formulas.md", "a", encoding="utf-8").write("""

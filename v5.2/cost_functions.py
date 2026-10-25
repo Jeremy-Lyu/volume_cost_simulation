@@ -93,11 +93,11 @@ def quality_cost_per_unit(d, s):   # 质量成本/台：返修工时成本。有
     scrap = 0.0 if d.get("line_supply") else r["scrap_rate"] * r["scrap_cost_per_unit"]
     return ng * r["hours_per_unit"] * r["cost_per_hour"] + scrap
 
-def capacity(d, s, o, k, t):   # 正常班产能 = JPH × 开动小时 × 有效产出系数
-    return o["jph"] * hours(d, k, t, s) * output_factor(d, s, t)
+def capacity(d, s, o, k, t):   # 正常班产能 = JPH × 混线有效系数(A07) × 开动小时 × 有效产出系数
+    return o["jph"] * o.get("mix_eff", 1.0) * hours(d, k, t, s) * output_factor(d, s, t)
 
 def ot_units(d, s, o, t, ot_hours):   # 加班产量 = JPH × 加班小时 × 与正常班相同的有效产出系数
-    return o["jph"] * ot_hours * output_factor(d, s, t)
+    return o["jph"] * o.get("mix_eff", 1.0) * ot_hours * output_factor(d, s, t)
 
 def rework_capacity_per_shift(d, s):   # 返修区每班可用工时 = 返修工位数（与产线同班次）
     r = rwk(d, s)
@@ -196,7 +196,7 @@ def flex_var_share(d, s):      # 停工日可省的人工比例 = 正式工(1−
     return (1 - r["dispatch_share"]) * (1 - r["stopday_pay_regular"]) + r["dispatch_share"] * (1 - r["stopday_pay_dispatch"])
 def paid_days(d, s): return (lflex(d, s) or {}).get("paid_days_month", 21.75)
 def cap_per_day(d, s, o, k, t):   # 一个开工日的产能
-    return o["jph"] * d["shift"][k]["eff_hours_per_shift"] * k * output_factor(d, s, t) if k else 0.0
+    return o["jph"] * o.get("mix_eff", 1.0) * d["shift"][k]["eff_hours_per_shift"] * k * output_factor(d, s, t) if k else 0.0
 def stop_day_saving(d, s, o, k, t):
     """月内多停 1 个工作日能省多少（元）：人工弹性部分 + 夜班补贴 + 能源（开工日能耗 − 停机日能耗）"""
     if not k or not lflex(d, s): return dict(人工=0.0, 能源=0.0)

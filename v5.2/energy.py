@@ -117,9 +117,9 @@ def parts(d, s, o, k, t, run_h, workdays):
     return {kk: vv for kk, vv in r.items() if vv}, pol
 
 def estimate_per_unit(d, s, o, k, t, volume, workdays=21, rate=0.9):
-    """调整 JPH 时估算单车能源（元/台）：开线小时 = 产量 ÷ (JPH × 开动率)；其余时间按待机/保温，周末按策略。
+    """调整 JPH 时估算单车能源（元/台）：开线小时 = 产量 ÷ (JPH × 按天产能折算系数 rate，默认 0.9 ⚠)；其余时间按待机/保温，周末按策略。
     返回 dict（运行电/待机电/天然气/启停/单车变动/合计，元/台）。不进优化，供快速估算与测试。"""
-    run_h = volume / (o["jph"] * rate)
+    run_h = volume / (o["jph"] * o.get("mix_eff", 1.0) * rate)   # A07：名义 JPH × 车型混线有效系数（默认 1）
     p, pol = parts(d, s, o, k, t, run_h, workdays)
     p.pop("需量电费", None)
     p["单车变动"] = (d["shop"][s]["kwh_per_unit"] * shift_price(d, t, k) + se(d, s)["gas_m3_per_unit"] * gas(d)) * volume

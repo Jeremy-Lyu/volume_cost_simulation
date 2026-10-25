@@ -37,5 +37,35 @@
     0.0,
     0.2,
     0.5
-  ]
+  ],
+  "_A05_A10_说明": "假设登记表 A05–A10 的按天层参数。默认全部关闭（0 / null / 空列表），结果与关闭前一致；_A05_A10_示例 里是 ⚠ 示例值（不被读取，lab/a05_a10_compare.py 用），不是工厂实测",
+  "hire_lead_months": 0,
+  "prev_crew": null,
+  "learning_extra_lost_days": 0,
+  "pm_dates": [],
+  "jit_swing_penalty_per_unit": 0,
+  "jit_free_swing_ratio": 0,
+  "restart_quality_cost": 0,
+  "_A05_A10_示例": {
+    "hire_lead_months": 1,
+    "prev_crew": {
+      "BIW": [
+        36,
+        2
+      ],
+      "PNT": [
+        36,
+        2
+      ]
+    },
+    "learning_extra_lost_days": 1,
+    "pm_dates": [
+      "10-17"
+    ],
+    "jit_swing_penalty_per_unit": 100,
+    "jit_free_swing_ratio": 0.1,
+    "restart_quality_cost": 30000,
+    "jph_options.csv:mix_eff": 0.95,
+    "_说明": "⚠ 示例值（模拟口径）：A05 提前 1 月+上月 JPH36×2；A06 换档后多损失 1 天；A08 每月 1 个 PM 日；A09 日波动免费带宽 10%、超出 100 元/台；A10 每次启线 3 万元；A07 有效系数 0.95"
+  }
 }

@@ -8,3 +8,4 @@ streamlit==1.66.0
 # 画图与手册检查可选
 matplotlib>=3.8
 python-docx>=1.1
+openpyxl>=3.1

@@ -24,12 +24,22 @@ def day_terms(d, cfg, s, o, k, t):
     gap = 24 - nh
     if gap > 0:   # 班间/夜间：按 night_policy（hold=保温；auto=按临界间隔）
         a, b, c, _ = E._gap(d, s, kw, t, gap, 1, E.off_price(d, t, k), e["night_policy"]); sb += a; gas += b; run += c
-    return dict(el_run=run, el_sb=sb, gas=gas), o["jph"] * effh * cfg["daily_capacity_factor"]
+    return dict(el_run=run, el_sb=sb, gas=gas), o["jph"] * o.get("mix_eff", 1.0) * effh * cfg["daily_capacity_factor"]
+
+def pm_days(cfg):
+    """A08：PM 日历 → 本月的日序号（0 起）。接受 "MM-DD"、"YYYY-MM-DD" 或整数日；不在本月的忽略（不核对年份）"""
+    out = set()
+    for x in cfg.get("pm_dates") or []:
+        if isinstance(x, int): m, dd = cfg["month"], x
+        else: p = str(x).split("-"); m, dd = int(p[-2]), int(p[-1])
+        if m == cfg["month"] and 1 <= dd <= cfg["days"]: out.add(dd - 1)
+    return out
 
 def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
     t = cfg["month"]; D = range(cfg["days"]); S = cfg["shops"]; K = [k for k in sorted(d["shift"]) if k > 0]
-    wk = [(cfg["first_weekday"] + i) % 7 >= 5 for i in D]; nwd = sum(1 for w in wk if not w)
-    need = [0 if wk[i] else cfg["monthly_demand"] / nwd for i in D]
+    wk = [(cfg["first_weekday"] + i) % 7 >= 5 for i in D]; pmd = pm_days(cfg)   # A08：PM 日全厂停线，总装需求摊到其余工作日
+    nwd = sum(1 for i in D if not wk[i] and i not in pmd)
+    need = [0 if (wk[i] or i in pmd) else cfg["monthly_demand"] / nwd for i in D]
     g = d["g"]; wage = g["wage_per_head_month"] * g.get("burden_rate", 1.0); hr = g["wage_per_head_month"] / g["std_hours_month"]
     P = pulp.LpProblem("daily", pulp.LpMinimize); acc = {}; lost_switch = []
     def add(k_, e_): acc.setdefault(k_, []).append(e_)
@@ -59,7 +69,7 @@ def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
                 if pt is not None and i != pt and cf.jph_switch(d, s):   # v5.2：与上月 JPH 档不同 → 换档成本 + 损失产出（按损失天数×日产能计惩罚）
                     js = cf.jph_switch(d, s)
                     add("JPH换档", crew[(s, i, kk)] * js["cost_per_switch"])
-                    lost_switch.append((s, crew[(s, i, kk)] * js["lost_days"] * o["jph"] * d["shift"][kk]["eff_hours_per_shift"] * kk * cfg["daily_capacity_factor"]))
+                    lost_switch.append((s, crew[(s, i, kk)] * (js["lost_days"] + (cfg.get("learning_extra_lost_days") or 0)) * o["jph"] * o.get("mix_eff", 1.0) * d["shift"][kk]["eff_hours_per_shift"] * kk * cfg["daily_capacity_factor"]))
                 add("班车外包", crew[(s, i, kk)] * (d["shift"][kk]["bus_cost_per_shift_month"] + d["shift"][kk]["outsourcing_per_shift_month"]) * kk)
         for j in D:
             P += opn[(s, j)] <= 1, f"open1_{s}_{j}"
@@ -121,16 +131,16 @@ def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
         for s in S:
             for j in D:
                 if wk[j]: P += opn[(s, j)] == 0, f"cw_{s}_{j}"; P += off[(s, j)] == 0, f"ch_{s}_{j}"
-                else: P += pulp.lpSum(y[(s, j, i, 3)] for i in I[s]) == 1, f"c3_{s}_{j}"
+                elif j not in pmd: P += pulp.lpSum(y[(s, j, i, 3)] for i in I[s]) == 1, f"c3_{s}_{j}"
     elif strategy == "two_shift":
         for s in S:
             for j in D:
                 if wk[j]: P += opn[(s, j)] == 0, f"tw_{s}_{j}"; P += off[(s, j)] == 1, f"to_{s}_{j}"
-                else: P += pulp.lpSum(y[(s, j, i, 2)] for i in I[s]) == 1, f"t2_{s}_{j}"
+                elif j not in pmd: P += pulp.lpSum(y[(s, j, i, 2)] for i in I[s]) == 1, f"t2_{s}_{j}"
     elif strategy == "weekdays":   # v5.2 对照：每个工作日都开（班次可选），不主动停线
         for s in S:
             for j in D:
-                if not wk[j]: P += opn[(s, j)] == 1, f"wd_{s}_{j}"
+                if not wk[j] and j not in pmd: P += opn[(s, j)] == 1, f"wd_{s}_{j}"
     elif strategy == "sync":
         for j in D:
             for k in K: P += pulp.lpSum(y[(a, j, i, k)] for i in I[a]) == pulp.lpSum(y[(b, j, i, k)] for i in I[b]), f"sync_{j}_{k}"
@@ -141,12 +151,34 @@ def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
                     for k in K: P += y[(s, j, i, k)] <= crew[(s, i, k)], f"ssc_{s}_{j}_{i}_{k}"
     for s, kk0 in (cfg.get("fix_crew") or {}).items():   # v5.2：定员班次按月已定（例如沿用上月 2 班定员），当月只能靠开停天数调节
         P += pulp.lpSum(crew[(s, i, kk)] for i in I[s] for kk in K if kk == kk0) == 1, f"fixcrew_{s}"
+    # ===== A05–A10 按天层参数（默认全部关闭：不建任何变量和约束，结果与关闭前逐格一致；数值均为 ⚠ 示例） =====
+    for j in sorted(pmd):   # A08 计划维修：PM 日焊装、涂装都不开（计入停线天数）
+        for s in S: P += opn[(s, j)] == 0, f"pm_{s}_{j}"
+    if (cfg.get("hire_lead_months") or 0) >= 1 and cfg.get("prev_crew"):   # A05 招聘提前期 ≥ 1 月：本月定员人数不能超过上月（可减不可加）
+        for s, (pj, pk) in cfg["prev_crew"].items():
+            if s not in S: continue
+            po = next(o_ for o_ in d["jph"][s] if o_["jph"] == float(pj))
+            P += crewheads[s] <= (po["heads"] + cf.indirect_heads(d, s, po)) * pk + 1e-6, f"hirelead_{s}"
+    rq = float(cfg.get("restart_quality_cost") or 0)
+    if rq > 0:   # A10 复产质量：每次启线（前一天不开、当天开）计一笔质量损失；月初第 1 天不计
+        for s in S:
+            for j in list(D)[1:]:
+                r_ = pulp.LpVariable(f"rq_{s}_{j}", lowBound=0); P += r_ >= opn[(s, j)] - opn[(s, j - 1)], f"rq_{s}_{j}"
+                add("复产质量", r_ * rq)
+    jp = float(cfg.get("jit_swing_penalty_per_unit") or 0)
+    if jp > 0:   # A09 MOQ/JIT：焊装相邻两个工作日产量差超过免费带宽的部分，按元/台计罚（周末与 PM 日不算，视为已提前通知）
+        free = float(cfg.get("jit_free_swing_ratio") or 0) * cfg["monthly_demand"] / nwd; s0 = S[0]
+        chain = [j for j in D if not wk[j] and j not in pmd]
+        for a_, b_ in zip(chain, chain[1:]):
+            dv = pulp.LpVariable(f"jit_{b_}", lowBound=0)
+            P += dv >= q[(s0, b_)] - q[(s0, a_)] - free, f"jitu_{b_}"; P += dv >= q[(s0, a_)] - q[(s0, b_)] - free, f"jitd_{b_}"
+            add("JIT波动", dv * jp)
     if fix:
         for v in P.variables():
             if v.name in fix: v.lowBound = v.upBound = fix[v.name]; v.cat = "Continuous"
     accs = {k_: pulp.lpSum(v_) for k_, v_ in acc.items()}
     P += pulp.lpSum(accs.values())
-    return P, dict(acc=accs, y=y, off=off, st=st, q=q, B=B, PB=PB, sh=sh, peak=peak, crew=crew, wk=wk, need=need, caps=caps, D=D, S=S, K=K, I=I)
+    return P, dict(acc=accs, y=y, off=off, st=st, q=q, B=B, PB=PB, sh=sh, peak=peak, crew=crew, wk=wk, need=need, caps=caps, D=D, S=S, K=K, I=I, pmd=pmd)
 
 def _solver(cfg):
     tl = cfg.get("solver_time_limit", 120); gap = cfg.get("mip_rel_gap", 1e-3)
@@ -183,6 +215,7 @@ def solve(d, cfg, strategy="optimal", buf_max=None, duals=True):
               涂装启炉次数=sum(r["PNT_启炉"] for r in sched), 最高白车身缓存=max(r["白车身缓存"] for r in sched),
               平均白车身缓存=round(sum(r["白车身缓存"] for r in sched) / len(sched)), 缺货台=sum(r["缺货"] for r in sched),
               需量kW=round(v["peak"].value()), 库容影子价格_元每台月=None if sp is None else round(sp, 1), 求解秒=round(time.time() - t0, 1))
+    if v["pmd"]: kp["PM停线天"] = sum(1 for j in v["pmd"] if not v["wk"][j])   # A08 开启时才加这一列
     return dict(kpi=kp, cost=cost, sched=sched, obj=obj)
 
 def _key(d, cfg, strategy, buf_max):

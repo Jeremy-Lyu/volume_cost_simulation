@@ -217,7 +217,7 @@ def build(d, jph_step=False, shift_quarter=False, util_cap=None, head_change=Non
                 P += otx[(s,i,t)] <= (d["g"]["ot_hard_cap_per_head_month"] - d["shop"][s]["ot_max_hours_month"]) * kk, f"otx_{s}_{i}_{t}"
             if cdec[s] or (ccol[s] and onc is not None):   # 产能扣除换型工时。decision：每个额外车型至少一次；color：每种在产颜色至少一次
                 P += pulp.lpSum(x[(s,m,t)] for m in M) <= pulp.lpSum(cf.capacity(d,s,o(s,i),k,t)*Y(s,i,k,t) for i in n for k in K) \
-                     - pulp.lpSum(o(s,i)["jph"]*d["chg"][s]["hours_per_setup"]*st[s][(i,t)] for i in n) \
+                     - pulp.lpSum(o(s,i)["jph"]*o(s,i).get("mix_eff", 1.0)*d["chg"][s]["hours_per_setup"]*st[s][(i,t)] for i in n) \
                      + pulp.lpSum(cf.ot_units(d,s,o(s,i),t,ot[(s,i,t)]+otx[(s,i,t)]) for i in n) - lostcap(s,t), f"cap_{s}_{t}"
                 for i in n: P += st[s][(i,t)] <= (len(colors) or len(M)) * pulp.lpSum(Y(s,i,k,t) for k in K), f"stlink_{s}_{i}_{t}"
                 if cdec[s]:

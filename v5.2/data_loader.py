@@ -18,7 +18,8 @@ def load(data_dir=None):
     d["cap"] = {(r["shop"], r["model"], int(r["month"])): float(r["cap"]) for r in _r("capacity_limit.csv")}
     d["jph"] = {}
     for r in _r("jph_options.csv"):
-        d["jph"].setdefault(r["shop"], []).append({"jph": float(r["jph"]), "heads": float(r["heads_per_shift"]), "kw": float(r["run_kw"])})
+        d["jph"].setdefault(r["shop"], []).append({"jph": float(r["jph"]), "heads": float(r["heads_per_shift"]), "kw": float(r["run_kw"]),
+                                                "mix_eff": float(r.get("mix_eff") or 1.0)})   # A07：车型混线有效系数，缺列 = 1
     d["shift"] = {int(r["shifts"]): {k: float(v) for k, v in r.items()} for r in _r("shift_options.csv")}
     d["shop"] = {r["shop"]: {k: float(v) for k, v in r.items() if k != "shop"} for r in _r("shop_params.csv")}
     d["g"] = {r["key"]: float(r["value"]) for r in _r("global_params.csv")}
