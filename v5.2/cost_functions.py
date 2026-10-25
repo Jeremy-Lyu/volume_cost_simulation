@@ -116,7 +116,7 @@ def night_shifts(d, k):        # v4 规则6：每天夜班个数（两班倒 1 �
 def labor_breakdown(d, s, o, k, t=None):   # 人工：直接+间接(v4 规则7 归人工) / 福利社保 / 夜班补贴
     direct_heads, ind_heads = o["heads"] * k, indirect_heads(d, s, o) * k
     wage = d["g"]["wage_per_head_month"]
-    # v4 规则6：夜班补贴 = 夜班班组定员(直接+间接) × 夜班个数 × 开工天数 × 元/人/夜班
+    # v4 规则6：夜班补贴 = 夜班定员班次人数(直接+间接) × 夜班个数 × 开工天数 × 元/人/夜班
     night = (o["heads"] + indirect_heads(d, s, o)) * night_shifts(d, k) * workdays(d, s, t) * d["g"]["night_allowance_per_head_night"]
     return {"直接人工": direct_heads * wage, "间接人工": ind_heads * wage,
             "福利社保": (direct_heads + ind_heads) * wage * (d["g"].get("burden_rate", 1.0) - 1.0),
@@ -144,7 +144,7 @@ def fixed_breakdown(d, s, o, k, t):
 def ot_rate(d):                # v4 规则5：加班单价 = 小时工资 × 倍数（工作日1.5/休息日2/法定3，默认1.5 ⚠）
     return d["g"]["wage_per_head_month"] / d["g"]["std_hours_month"] * d["g"]["ot_multiplier"]
 
-def ot_heads(d, s, o):         # 一个线体加班小时需要的人数 = 一个班组（直接+间接）
+def ot_heads(d, s, o):         # 一个线体加班小时需要的人数 = 一个定员班次（直接+间接）
     return o["heads"] + indirect_heads(d, s, o)
 
 def ot_labor_per_hour(d, s, o):          # 线体加班 1 小时的人工费（含福利）
@@ -156,7 +156,7 @@ def ot_excess_per_hour(d, s, o):         # v4 规则4：超 36h/人 部分每线
 def ot_labor_cost(d, s, o, otv, otx=0.0):
     return (otv + otx) * ot_labor_per_hour(d, s, o) + otx * ot_excess_per_hour(d, s, o)
 
-def ot_cost_per_hour(d, s, o, t=None):    # 加班1小时（36h 内）：班组加班费 + 运行能耗
+def ot_cost_per_hour(d, s, o, t=None):    # 加班1小时（36h 内）：定员班次加班费 + 运行能耗
     return ot_labor_per_hour(d, s, o) + ot_energy_per_hour(d, s, o, t)
 
 def mat_cost(d, m, t=None):    # 单车物料费。有零件价（原币×汇率）时优先，否则用 mat_cost.csv

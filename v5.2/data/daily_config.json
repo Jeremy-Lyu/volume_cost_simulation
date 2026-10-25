@@ -8,7 +8,7 @@
     "BIW",
     "PNT"
   ],
-  "run_rate": 0.9,
+  "daily_capacity_factor": 0.9,
   "biw_buffer_min": 50,
   "biw_buffer_max": 600,
   "biw_buffer_start": 200,

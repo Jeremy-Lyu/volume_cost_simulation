@@ -1,7 +1,7 @@
 """v5.1 按天排产层：焊装 → 白车身缓存 → 涂装 → PBS（涂装后缓存）→ 总装（示例数据）
-决策（每车间每天）：开/不开（二进制）、开几班、月度 JPH 档与班组数；不开时 保温 还是 停炉（off）；停炉后再开计一次启炉成本
+决策（每车间每天）：开/不开（二进制）、开几班、月度 JPH 档与定员班次数；不开时 保温 还是 停炉（off）；停炉后再开计一次启炉成本
 约束：白车身缓存日平衡 B[d]=B[d-1]+焊装产出−涂装投入，下限 ≤ B ≤ 库容；PBS 同理供总装（总装按工作日均衡拉动）；月末缓存不低于月初
-成本：人工（班组月薪 + 夜班补贴 + 休息日加班费）+ 班车外包 + 分时能源（运行电/待机电/天然气/启停/需量）+ 缓存持有与资金占用 + 缺货惩罚
+成本：人工（定员班次月薪 + 夜班补贴 + 休息日加班费）+ 班车外包 + 分时能源（运行电/待机电/天然气/启停/需量）+ 缓存持有与资金占用 + 缺货惩罚
 策略：continuous=工作日三班连续、周末保温；sync=焊装与涂装同开同停（模型选哪天开）；optimal=模型自由排；two_shift=工作日两班+周末停炉（参考）
 参数：data/daily_config.json + 能源参数（energy_config.json / shop_energy.csv / tou_*.csv），全部 ⚠ 暂定
 用法：python3 daily.py [--strategies=continuous,sync,optimal,two_shift] [--no-cache]"""
@@ -24,7 +24,7 @@ def day_terms(d, cfg, s, o, k, t):
     gap = 24 - nh
     if gap > 0:   # 班间/夜间：按 night_policy（hold=保温；auto=按临界间隔）
         a, b, c, _ = E._gap(d, s, kw, t, gap, 1, E.off_price(d, t, k), e["night_policy"]); sb += a; gas += b; run += c
-    return dict(el_run=run, el_sb=sb, gas=gas), o["jph"] * effh * cfg["run_rate"]
+    return dict(el_run=run, el_sb=sb, gas=gas), o["jph"] * effh * cfg["daily_capacity_factor"]
 
 def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
     t = cfg["month"]; D = range(cfg["days"]); S = cfg["shops"]; K = [k for k in sorted(d["shift"]) if k > 0]
@@ -59,7 +59,7 @@ def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
                 if pt is not None and i != pt and cf.jph_switch(d, s):   # v5.2：与上月 JPH 档不同 → 换档成本 + 损失产出（按损失天数×日产能计惩罚）
                     js = cf.jph_switch(d, s)
                     add("JPH换档", crew[(s, i, kk)] * js["cost_per_switch"])
-                    lost_switch.append((s, crew[(s, i, kk)] * js["lost_days"] * o["jph"] * d["shift"][kk]["eff_hours_per_shift"] * kk * cfg["run_rate"]))
+                    lost_switch.append((s, crew[(s, i, kk)] * js["lost_days"] * o["jph"] * d["shift"][kk]["eff_hours_per_shift"] * kk * cfg["daily_capacity_factor"]))
                 add("班车外包", crew[(s, i, kk)] * (d["shift"][kk]["bus_cost_per_shift_month"] + d["shift"][kk]["outsourcing_per_shift_month"]) * kk)
         for j in D:
             P += opn[(s, j)] <= 1, f"open1_{s}_{j}"
@@ -134,12 +134,12 @@ def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
     elif strategy == "sync":
         for j in D:
             for k in K: P += pulp.lpSum(y[(a, j, i, k)] for i in I[a]) == pulp.lpSum(y[(b, j, i, k)] for i in I[b]), f"sync_{j}_{k}"
-    if cfg.get("same_shift_as_crew"):   # v5.2 敏感性：开工日必须开满班组的班数（不能"每天少开一班"），只能整天停
+    if cfg.get("same_shift_as_crew"):   # v5.2 敏感性：开工日必须开满定员班次的班数（不能"每天少开一班"），只能整天停
         for s in S:
             for j in D:
                 for i in I[s]:
                     for k in K: P += y[(s, j, i, k)] <= crew[(s, i, k)], f"ssc_{s}_{j}_{i}_{k}"
-    for s, kk0 in (cfg.get("fix_crew") or {}).items():   # v5.2：班组规模按月已定（例如沿用上月 2 班定员），当月只能靠开停天数调节
+    for s, kk0 in (cfg.get("fix_crew") or {}).items():   # v5.2：定员班次按月已定（例如沿用上月 2 班定员），当月只能靠开停天数调节
         P += pulp.lpSum(crew[(s, i, kk)] for i in I[s] for kk in K if kk == kk0) == 1, f"fixcrew_{s}"
     if fix:
         for v in P.variables():
@@ -178,8 +178,8 @@ def solve(d, cfg, strategy="optimal", buf_max=None, duals=True):
               换档_万元=round(cost.get("JPH换档", 0) / 1e4, 1),
               库存_万元=round(cost.get("缓存持有", 0) / 1e4, 1),
               焊装开工天=sum(1 for r in sched if "JPH" in r["BIW_状态"]), 涂装开工天=sum(1 for r in sched if "JPH" in r["PNT_状态"]),
-              焊装班组=next((f"JPH{int(d['jph']['BIW'][i]['jph'])}×{kk}班组" for (s_, i, kk), var in v["crew"].items() if s_ == "BIW" and (var.value() or 0) > 0.5), "-"),
-              涂装班组=next((f"JPH{int(d['jph']['PNT'][i]['jph'])}×{kk}班组" for (s_, i, kk), var in v["crew"].items() if s_ == "PNT" and (var.value() or 0) > 0.5), "-"),
+              焊装定员班次=next((f"JPH{int(d['jph']['BIW'][i]['jph'])}×{kk}班定员" for (s_, i, kk), var in v["crew"].items() if s_ == "BIW" and (var.value() or 0) > 0.5), "-"),
+              涂装定员班次=next((f"JPH{int(d['jph']['PNT'][i]['jph'])}×{kk}班定员" for (s_, i, kk), var in v["crew"].items() if s_ == "PNT" and (var.value() or 0) > 0.5), "-"),
               涂装启炉次数=sum(r["PNT_启炉"] for r in sched), 最高白车身缓存=max(r["白车身缓存"] for r in sched),
               平均白车身缓存=round(sum(r["白车身缓存"] for r in sched) / len(sched)), 缺货台=sum(r["缺货"] for r in sched),
               需量kW=round(v["peak"].value()), 库容影子价格_元每台月=None if sp is None else round(sp, 1), 求解秒=round(time.time() - t0, 1))
@@ -213,7 +213,7 @@ def demand_sweep(d, cfg, levels=None, strategies=("sync", "optimal"), use_cache=
         c = dict(cfg, monthly_demand=q)
         for s in strategies:
             k = solve_cached(d, c, s, None, True, use_cache)["kpi"]
-            rows.append(dict(月需求=q, **{kk: k[kk] for kk in ("策略", "运营成本_万元", "单车_元", "能源_万元", "人工_万元", "库存_万元", "焊装班组", "涂装班组",
+            rows.append(dict(月需求=q, **{kk: k[kk] for kk in ("策略", "运营成本_万元", "单车_元", "能源_万元", "人工_万元", "库存_万元", "焊装定员班次", "涂装定员班次",
                                                            "焊装开工天", "涂装开工天", "涂装启炉次数", "最高白车身缓存", "库容影子价格_元每台月")}))
     return rows
 
@@ -232,7 +232,7 @@ def dispatch_sweep(d, cfg, shares=None, levels=None, use_cache=True):
             ro = solve_cached(e, c, "optimal", None, True, use_cache)["kpi"]; rc = solve_cached(e, c, "weekdays", None, False, use_cache)["kpi"]
             rows.append(dict(派遣比=f"{int(sh_*100)}%", 停工日可省人工比=f"{cf.flex_var_share(e, 'BIW')*100:.0f}%", 月需求=q,
                              最优_万元=ro["运营成本_万元"], 每工作日都开_万元=rc["运营成本_万元"], 开停策略节省_万元=round(rc["运营成本_万元"] - ro["运营成本_万元"], 1),
-                             焊装开工天=ro["焊装开工天"], 涂装开工天=ro["涂装开工天"], 涂装启炉次数=ro["涂装启炉次数"], 焊装班组=ro["焊装班组"], 涂装班组=ro["涂装班组"],
+                             焊装开工天=ro["焊装开工天"], 涂装开工天=ro["涂装开工天"], 涂装启炉次数=ro["涂装启炉次数"], 焊装定员班次=ro["焊装定员班次"], 涂装定员班次=ro["涂装定员班次"],
                              最高白车身缓存=ro["最高白车身缓存"], 借调_人=ro["借调_人"], 库容影子价格_元每台月=ro["库容影子价格_元每台月"], 人工_万元=ro["人工_万元"], 能源_万元=ro["能源_万元"]))
     return rows
 

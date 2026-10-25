@@ -2,6 +2,21 @@
 
 > 每次修改记一条：日期、改了什么、为什么、影响哪些结果、测试状态。只改 CSV 的工厂参数不必写这里，写在 `data/假设登记表.md`，步骤见 `发布/工厂改数与重算指南.md`。改了公式并确认新口径之后，才 `python3 golden.py --update`，并在下面加一条。全部数字为示例数据，⚠ = 暂定参数。
 
+## v5.2 — 2026-10-25 术语改名（数值未变）
+
+- **改了什么**：按术语表统一两处命名。只改名字、标签和说明文字，公式、参数值和计算结果不变。
+
+| 位置 | 旧名 | 新名 | 含义 |
+|:--|:--|:--|:--|
+| `data/daily_config.json`、`daily.py` 的 `cfg[...]` | `run_rate` | `daily_capacity_factor` | 按天产能折算系数（日产能 = JPH × 有效小时 × 该系数，仍为 0.9 ⚠） |
+| 按天层输出列（`daily_strategy_summary.csv`、`daily_demand_sweep.csv`、`daily_dispatch_sweep.csv`） | 焊装班组 / 涂装班组 | 焊装定员班次 / 涂装定员班次 | 当月定下的 JPH 档和定员班次数 |
+| 上述列的取值 | `JPH36×2班组` | `JPH36×2班定员` | 同上 |
+| 注释和文档（`daily.py`、`cost_functions.py`、`report.py`、`model_builder.py`、`lab/daily_flex_sweep.py`、`diagrams/plot_v4_logic.py`、`plot_v5_logic.py`、`docs_build/`） | 班组、班组人数、一个班组（直接+间接） | 定员班次、定员班次人数、一个定员班次（直接+间接） | 月度定员班次，不是人员编组本身 |
+
+- **没改**：岗位名「班组长」；指真实人员编组的用法（`lab/factory_analysis.py`「新班组」、`diagrams/plot_architecture.py`「周度班组」、`diagrams/plot_business_arch.py`「排产 · 班组」）；历史条目（本文件 v5.1 及以前）；`archive/`、`本地/`、`发布/` 下的文档副本。指 OEE/限产的「开动率」（`avail`、`oee.csv`）也不是 `run_rate`，不改。
+- **影响**：读旧列名的外部表格要改成新列名；`output/` 下改名前生成的 CSV 仍是旧表头，重跑 `daily.py` 即更新。图表源码里的文字已改，PNG 未重画。
+- **测试**：113 项通过（改名前后相同）；`daily.py --no-cache` 改名前后各策略运营成本、单车、人工、能源、开工天、启炉次数一致。
+
 ## v5.2 — 2026-10-22
 
 - 决策卡：月度借调净额达到 50 万元时，在「多花多少」和待确认里标「未验证」。运营成本数字不改。

@@ -211,7 +211,7 @@ def build(d, jph_step=False, shift_quarter=False, util_cap=None, head_change=Non
         for t in T:
             n = range(ni[s])
             P += pulp.lpSum(Y(s,i,k,t) for i in n for k in K) == 1, f"one_{s}_{t}"
-            for i in n:   # v4 规则4：每班组人员都可加班 → 线体加班小时上限 = 人均上限 × 班次数；36h 内为常规，超出为超限（有溢价、有绝对上限）
+            for i in n:   # v4 规则4：每个定员班次的人员都可加班 → 线体加班小时上限 = 人均上限 × 班次数；36h 内为常规，超出为超限（有溢价、有绝对上限）
                 kk = pulp.lpSum(k * Y(s,i,k,t) for k in K)
                 P += ot[(s,i,t)] <= d["shop"][s]["ot_max_hours_month"] * kk, f"otl_{s}_{i}_{t}"
                 P += otx[(s,i,t)] <= (d["g"]["ot_hard_cap_per_head_month"] - d["shop"][s]["ot_max_hours_month"]) * kk, f"otx_{s}_{i}_{t}"

@@ -1,4 +1,4 @@
-"""v5.2 敏感性：班组按月已定（2 班定员）时，派遣比 × 白车身库容 → 停几天值不值、库容何时卡住（示例数据，⚠）
+"""v5.2 敏感性：定员班次按月已定（2 班定员）时，派遣比 × 白车身库容 → 停几天值不值、库容何时卡住（示例数据，⚠）
 nohup python3 daily_flex_sweep.py > output/logs/flex_sweep.log 2>&1 &"""
 import os as _root_os, sys as _root_sys
 _root_sys.path.insert(0, _root_os.path.dirname(_root_os.path.dirname(_root_os.path.abspath(__file__))))
