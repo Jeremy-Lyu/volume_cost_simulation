@@ -15,24 +15,27 @@ SCEN = [("Q10000", "月需求 10,000 台 · 每天可少开班（默认口径）
 # (键, 名称, 对照键, 说明)
 SET = [("base", "基线（A05–A10 全关）", None, "当前默认"),
        ("A05", "A05 招聘提前期 1 月", "base", "上月定员 JPH36×2，本月不能加人"),
-       ("A06", "A06 学习曲线 +1 天", "base", "上月 JPH36 档；换档才生效"),
+       ("p36", "对照：上月 JPH36（只有 A04 换档成本）", "base", "A06、全开的对照行：上月档定了，选别的档就有换档成本"),
+       ("A06", "A06 学习曲线 +1 天", "p36", "上月 JPH36 档；换档才生效；与 p36 比"),
        ("A07", "A07 混线有效系数 0.95", "base", "名义 JPH × 0.95"),
        ("A08", "A08 每月 1 个 PM 日", "base", "10-17（周三）停线"),
        ("A09", "A09 JIT 日波动罚金", "base", "带宽 10%，超出 100 元/台"),
        ("A10", "A10 启线质量 3 万元/次", "base", "每次启线计一次"),
-       ("ALL", "全开（A05–A10）", "base", "以上六项同时打开"),
+       ("ALL", "全开（A05–A10）", "p36", "以上六项同时打开；与 p36 比（扣掉 A04 换档成本的影响）"),
+       ("ALLb", "全开（A05–A10，对基线）", "base", "同上，与基线比（含 A04 换档成本）"),
        ("p30", "对照：上月 JPH30（只有 A04 换档成本）", "base", "说明 A06 需要换档才起作用"),
        ("A06p30", "A06 +1 天（上月 JPH30）", "p30", "与上一行比"),
-       ("A05p30", "A05 提前 1 月（上月 JPH30×2）", "base", "上月人数少于基线所需")]
+       ("A05p30", "A05 提前 1 月（上月 JPH30×2）", "base", "上月人数少于基线所需；人不够时出现缺货（缺货台见右列，缺货罚金不在运营成本里）")]
 
 def make(d, key):
     c = {}; e = d
-    if key in ("A05", "ALL"): c.update(hire_lead_months=EX["hire_lead_months"], prev_crew=EX["prev_crew"])
-    if key in ("A06", "ALL"): c.update(learning_extra_lost_days=EX["learning_extra_lost_days"], prev_jph_tier={s: tier(d, s, 36) for s in ("BIW", "PNT")})
-    if key in ("A08", "ALL"): c.update(pm_dates=EX["pm_dates"])
-    if key in ("A09", "ALL"): c.update(jit_swing_penalty_per_unit=EX["jit_swing_penalty_per_unit"], jit_free_swing_ratio=EX["jit_free_swing_ratio"])
-    if key in ("A10", "ALL"): c.update(restart_quality_cost=EX["restart_quality_cost"])
-    if key in ("A07", "ALL"):
+    if key in ("A05", "ALL", "ALLb"): c.update(hire_lead_months=EX["hire_lead_months"], prev_crew=EX["prev_crew"])
+    if key == "p36": c.update(prev_jph_tier={s: tier(d, s, 36) for s in ("BIW", "PNT")})
+    if key in ("A06", "ALL", "ALLb"): c.update(learning_extra_lost_days=EX["learning_extra_lost_days"], prev_jph_tier={s: tier(d, s, 36) for s in ("BIW", "PNT")})
+    if key in ("A08", "ALL", "ALLb"): c.update(pm_dates=EX["pm_dates"])
+    if key in ("A09", "ALL", "ALLb"): c.update(jit_swing_penalty_per_unit=EX["jit_swing_penalty_per_unit"], jit_free_swing_ratio=EX["jit_free_swing_ratio"])
+    if key in ("A10", "ALL", "ALLb"): c.update(restart_quality_cost=EX["restart_quality_cost"])
+    if key in ("A07", "ALL", "ALLb"):
         e = copy.deepcopy(d)
         for s in e["jph"]:
             for o in e["jph"][s]: o["mix_eff"] = MIX
@@ -65,7 +68,7 @@ def page(rows, path):
         b = R.get((sk, "base", "optimal")); bw = R.get((sk, "base", "weekdays"))
         H.append(f"<h2>{esc(title)}</h2><table><tr><th class='l'>设定</th><th class='l'>说明</th><th>运营成本<br>万元/月</th><th>比对照<br>万元</th><th class='l'>推荐方案（焊装 / 涂装 · 开工天）</th><th>翻转</th>"
                  "<th>每工作日都开<br>万元</th><th>开停策略节省<br>万元</th><th>节省变化<br>万元</th><th>节省变化<br>%</th><th>复产质量</th><th>JIT波动</th><th>JPH换档</th><th>缺货台</th></tr>")
-        best = None
+        best = None; bsv = round(bw["运营成本_万元"] - b["运营成本_万元"], 1) if b and bw else 0; by_sv = abs(bsv) >= 1   # 基线节省≈0 时按运营成本排
         for key, name, ref, note in SET:
             o = R.get((sk, key, "optimal")); w = R.get((sk, key, "weekdays"))
             if not o or not w: continue
@@ -74,15 +77,16 @@ def page(rows, path):
             rplan = f"{ro['焊装']} / {ro['涂装']} · {ro['焊装开工天']}/{ro['涂装开工天']} 天"
             flip = (o['焊装'], o['涂装']) != (ro['焊装'], ro['涂装'])   # 翻转 = 推荐的定员班次变了；开工天数变化只显示不算翻转
             sv = round(w["运营成本_万元"] - o["运营成本_万元"], 1); rsv = round(rw["运营成本_万元"] - ro["运营成本_万元"], 1)
-            dsv = round(sv - rsv, 1); pct = "—" if abs(rsv) < 1 else f"{dsv / rsv * 100:+.0f}%"
+            dsv = round(sv - rsv, 1); pct = "—（对照节省≈0）" if abs(rsv) < 1 else f"{dsv / rsv * 100:+.0f}%"
             dc = round(o["运营成本_万元"] - ro["运营成本_万元"], 1)
-            if key not in ("base", "ALL", "p30") and (best is None or abs(dc) > abs(best[1])): best = (name, dc, dsv)
+            m = dsv if by_sv else dc
+            if key in ("A05", "A06", "A07", "A08", "A09", "A10") and (best is None or abs(m) > abs(best[3])): best = (name, dc, dsv, m)
             H.append(f"<tr><td class='l'>{esc(name)}</td><td class='l'>{esc(note)}</td><td>{o['运营成本_万元']:,.1f}</td><td>{'' if key=='base' else f'{dc:+,.1f}'}</td>"
                      f"<td class='l{' flip' if flip else ''}'>{esc(plan)}</td><td class='{'flip' if flip else ''}'>{'是' if flip else '否'}</td><td>{w['运营成本_万元']:,.1f}</td><td>{sv:,.1f}</td>"
                      f"<td>{'' if key=='base' else f'{dsv:+,.1f}'}</td><td>{'' if key=='base' else pct}</td><td>{o['复产质量_万元']}</td><td>{o['JIT波动_万元']}</td><td>{o['JPH换档_万元']}</td><td>{o['缺货台']}</td></tr>")
         H.append("</table>")
-        if best: summ.append(f"<li>{esc(title)}：单项影响最大的是 <b>{esc(best[0])}</b>（运营成本 {best[1]:+,.1f} 万元/月，开停节省 {best[2]:+,.1f} 万元/月）。</li>")
-    H.append("<h2>一句话结论（示例数据，模拟口径）</h2><ul>" + "".join(summ) + "</ul>")
+        if best: summ.append(f"<li>{esc(title)}：{'对开停策略节省' if by_sv else '对运营成本（这里基线开停节省≈0）'}影响最大的单项是 <b>{esc(best[0])}</b>（运营成本 {best[1]:+,.1f} 万元/月，开停节省 {best[2]:+,.1f} 万元/月）。</li>")
+    H.append("<h2>一句话结论（示例数据，模拟口径）</h2><ul>" + "".join(summ) + "<li>只在 6 个按示例值单开的设定里比较；p30、A06p30、A05p30 是换上月假设后的机制演示，不参与排名。</li></ul>")
     H.append("<h2>参数怎么进模型（按天层）</h2><table><tr><th class='l'>编号</th><th class='l'>参数（默认 = 关闭）</th><th class='l'>做法</th><th class='l'>近似点</th></tr>" + "".join(
         f"<tr><td class='l'>{a}</td><td class='l'>{esc(b)}</td><td class='l'>{esc(c)}</td><td class='l'>{esc(e)}</td></tr>" for a, b, c, e in [
         ("A05", "hire_lead_months=0，prev_crew=null", "提前期 ≥ 1 月且给出上月定员时，本月定员人数（直接+间接）≤ 上月", "单月模型只能表达「本月不能加人」；加班提前量没建；月度模型仍用 head_up（每月增幅上限）近似"),
