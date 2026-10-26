@@ -7,7 +7,7 @@
 用法：python3 daily.py [--strategies=continuous,sync,optimal,two_shift] [--no-cache]"""
 import copy, csv, json, os, sys, time, hashlib, pickle
 import pulp
-import data_loader as dl, cost_functions as cf, energy as E
+import data_loader as dl, cost_functions as cf, energy as E, solve_meta
 H = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(H, "output", "v5.1"); CACHE = os.path.join(H, ".cache")
 NAMES = dict(continuous="连续生产（工作日三班、周末保温）", sync="焊装涂装同步开停（模型选日）", optimal="模型自主排产", two_shift="工作日两班+周末停炉（参考）", weekdays="每个工作日都开（不主动停线，对照）")
 
@@ -180,12 +180,171 @@ def build(d, cfg, strategy="optimal", buf_max=None, fix=None):
     P += pulp.lpSum(accs.values())
     return P, dict(acc=accs, y=y, off=off, st=st, q=q, B=B, PB=PB, sh=sh, peak=peak, crew=crew, wk=wk, need=need, caps=caps, D=D, S=S, K=K, I=I, pmd=pmd)
 
+def integer_assignment(P):
+    """求解后的整数排法。取值空着的变量不收进来。"""
+    out = {}
+    for var in P.variables():
+        if var.cat != "Integer" or var.value() is None:
+            continue
+        out[var.name] = round(var.value())
+    return out
+
+
+def cost_fixed(d, cfg, fix, strategy="optimal", buf_max=None):
+    """按给定的整数排法只算成本。不重新选班次和开停。"""
+    if not fix:
+        raise ValueError("没有实际排法，不能只计价。需要一张「变量,取值」表，不重新选班次。")
+    P, _v = build(d, cfg, strategy, buf_max, fix=fix)
+    P.solve(_solver(cfg)[0])
+    return dict(status=pulp.LpStatus[P.status], obj=pulp.value(P.objective))
+
+
+def load_fix(path):
+    """读一张求解器变量表。文件不在时直接说明，不求解，也不编一份排法。"""
+    if not path or not os.path.isfile(path):
+        raise FileNotFoundError("没有实际排法，不能做历史回放。需要一张「变量,取值」表，只计价、不重新选班次。")
+    with open(path, encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    if not rows or "变量" not in rows[0] or "取值" not in rows[0]:
+        raise ValueError("排法表要有两列：变量,取值。")
+    return {row["变量"]: round(float(row["取值"])) for row in rows if row.get("变量")}
+
+
+SHOP_NAME = {"STP": "冲压", "BIW": "焊装", "PNT": "涂装", "TCF": "总装"}
+SCHEDULE_COLS = ("类型", "日", "车间", "JPH", "班次", "状态")
+
+
+def shop_code(name):
+    name = str(name).strip()
+    if name in SHOP_NAME:
+        return name
+    for code, label in SHOP_NAME.items():
+        if name == label:
+            return code
+    raise ValueError(f"不认识的车间：{name}")
+
+
+def _parse_state(text):
+    text = str(text).strip()
+    if text == "停炉":
+        return None, None, "停炉"
+    if text in ("保温", "保温/待机", "待机"):
+        return None, None, "保温"
+    if text.startswith("JPH") and "×" in text and text.endswith("班"):
+        jph, shifts = text[3:-1].split("×")
+        return int(jph), int(shifts), "开工"
+    raise ValueError(f"状态看不懂：{text}。要用 JPH36×1班、停炉或保温。")
+
+
+def _tier(d, shop, jph):
+    want = int(float(jph))
+    for i, opt in enumerate(d["jph"][shop]):
+        if int(opt["jph"]) == want:
+            return i
+    raise ValueError(f"{shop} 没有 JPH {want} 这一档。")
+
+
+def schedule_rows(d, result):
+    """把一次求解写成计划能填的行：每个车间一条定员，每一天一条开停。"""
+    rows = []
+    for name, val in sorted(result["fix"].items()):
+        if not str(name).startswith("crew_") or int(val) != 1:
+            continue
+        _tag, shop, i, kk = name.split("_")
+        rows.append(dict(类型="定员", 日="", 车间=shop, JPH=int(d["jph"][shop][int(i)]["jph"]), 班次=int(kk), 状态="定员"))
+    shops = [key[:-3] for key in result["sched"][0] if key.endswith("_状态")] if result["sched"] else []
+    for row in result["sched"]:
+        for shop in shops:
+            _jph, _shifts, kind = _parse_state(row[f"{shop}_状态"])
+            state = row[f"{shop}_状态"] if kind == "开工" else kind
+            rows.append(dict(类型="当日", 日=row["日"], 车间=shop,
+                             JPH="" if _jph is None else _jph, 班次="" if _shifts is None else _shifts, 状态=state))
+    return rows
+
+
+def load_schedule(path):
+    """读计划填写的排法表。只有表头、或文件不在时，不求解。"""
+    if not path or not os.path.isfile(path):
+        raise FileNotFoundError("没有实际排法，不能做历史回放。需要一张排法表，列是类型,日,车间,JPH,班次,状态。只计价、不重新选班次。")
+    with open(path, encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        raise ValueError("排法表是空的。要有每个车间的定员，以及每一天的开停。")
+    missing = [col for col in SCHEDULE_COLS if col not in rows[0]]
+    if missing:
+        raise ValueError("排法表要有列：类型,日,车间,JPH,班次,状态。")
+    return rows
+
+
+def fix_from_schedule(d, cfg, rows):
+    """排法表换成整数锁定。没写到的车间或日期不留给求解器重选。"""
+    if not rows:
+        raise ValueError("排法表是空的。要有每个车间的定员，以及每一天的开停。")
+    shops = list(cfg["shops"])
+    days = range(int(cfg["days"]))
+    shifts = [k for k in sorted(d["shift"]) if k > 0]
+    tiers = {s: range(len(d["jph"][s])) for s in shops}
+    fix = {}
+    for shop in shops:
+        for i in tiers[shop]:
+            for kk in shifts:
+                fix[f"crew_{shop}_{i}_{kk}"] = 0
+        for j in days:
+            fix[f"off_{shop}_{j}"] = 0
+            for i in tiers[shop]:
+                for k in shifts:
+                    fix[f"y_{shop}_{j}_{i}_{k}"] = 0
+    seen_crew, seen_day = set(), set()
+    for row in rows:
+        shop = shop_code(row["车间"])
+        if shop not in shops:
+            raise ValueError(f"这张按天排法只覆盖 {'、'.join(shops)}，没有 {shop}。")
+        kind = str(row["类型"]).strip()
+        if kind == "定员":
+            if shop in seen_crew:
+                raise ValueError(f"{shop} 的定员写了两次。")
+            seen_crew.add(shop)
+            i = _tier(d, shop, row["JPH"])
+            kk = int(float(row["班次"]))
+            if kk not in shifts:
+                raise ValueError(f"没有 {kk} 班。")
+            fix[f"crew_{shop}_{i}_{kk}"] = 1
+        elif kind == "当日":
+            day = int(float(row["日"]))
+            j = day - 1
+            if j not in days:
+                raise ValueError(f"第 {day} 天超出这 {cfg['days']} 天。")
+            if (shop, j) in seen_day:
+                raise ValueError(f"{shop} 第 {day} 天写了两次。")
+            seen_day.add((shop, j))
+            jph, shift, state = _parse_state(row["状态"])
+            if state == "停炉":
+                fix[f"off_{shop}_{j}"] = 1
+            elif state == "开工":
+                i = _tier(d, shop, jph)
+                if shift not in shifts:
+                    raise ValueError(f"没有 {shift} 班。")
+                fix[f"y_{shop}_{j}_{i}_{shift}"] = 1
+            elif state != "保温":
+                raise ValueError(f"状态看不懂：{row['状态']}。")
+        else:
+            raise ValueError(f"类型要写定员或当日，现在是 {kind}。")
+    if any(s not in seen_crew for s in shops) or any((s, j) not in seen_day for s in shops for j in days):
+        raise ValueError("排法没有覆盖每个车间的定员和每一天。")
+    return fix
+
+
 def _solver(cfg):
     tl = cfg.get("solver_time_limit", 120); gap = cfg.get("mip_rel_gap", 1e-3)
-    return pulp.HiGHS(msg=False, timeLimit=tl, gapRel=gap) if "HiGHS" in pulp.listSolvers(True) else pulp.PULP_CBC_CMD(msg=False, timeLimit=int(tl), gapRel=gap)
+    solver, threads, seed = solve_meta.make_solver(tl, gap, cfg.get("threads"), cfg.get("solver_seed", 1))
+    return solver, threads, seed, tl, gap
 
 def solve(d, cfg, strategy="optimal", buf_max=None, duals=True):
-    t0 = time.time(); P, v = build(d, cfg, strategy, buf_max); P.solve(_solver(cfg)); st = pulp.LpStatus[P.status]
+    t0 = time.time(); P, v = build(d, cfg, strategy, buf_max)
+    solver, threads, seed, tl, gap = _solver(cfg)
+    P.solve(solver); mip_seconds = time.time() - t0; st = pulp.LpStatus[P.status]
+    fixed = integer_assignment(P)
+    meta = solve_meta.meta_from(P, pulp.value(P.objective), gap, tl, mip_seconds, threads, seed)
     cost = {k: pulp.value(e) or 0.0 for k, e in v["acc"].items()}; obj = pulp.value(P.objective)
     sched = []
     for j in v["D"]:
@@ -198,8 +357,7 @@ def solve(d, cfg, strategy="optimal", buf_max=None, duals=True):
         sched.append(row)
     sp = None
     if duals:   # 影子价格：固定全部二进制（开停/班次/停炉）后解 LP，读白车身库容约束对偶值 = 库容 +1 台（全月）的节省
-        fix = {var.name: round(var.value()) for var in P.variables() if var.cat == "Integer"}
-        P2, v2 = build(d, cfg, strategy, buf_max, fix=fix); P2.solve(_solver(cfg))
+        P2, v2 = build(d, cfg, strategy, buf_max, fix=fixed); P2.solve(_solver(cfg)[0])
         try: sp = -sum(P2.constraints[f"bufmax_{j}"].pi or 0.0 for j in v["D"])
         except Exception: sp = None
     op = obj - cost.get("缺货惩罚", 0)
@@ -214,9 +372,12 @@ def solve(d, cfg, strategy="optimal", buf_max=None, duals=True):
               涂装定员班次=next((f"JPH{int(d['jph']['PNT'][i]['jph'])}×{kk}班定员" for (s_, i, kk), var in v["crew"].items() if s_ == "PNT" and (var.value() or 0) > 0.5), "-"),
               涂装启炉次数=sum(r["PNT_启炉"] for r in sched), 最高白车身缓存=max(r["白车身缓存"] for r in sched),
               平均白车身缓存=round(sum(r["白车身缓存"] for r in sched) / len(sched)), 缺货台=sum(r["缺货"] for r in sched),
-              需量kW=round(v["peak"].value()), 库容影子价格_元每台月=None if sp is None else round(sp, 1), 求解秒=round(time.time() - t0, 1))
+              需量kW=round(v["peak"].value()), 库容影子价格_元每台月=None if sp is None else round(sp, 1), 求解秒=round(time.time() - t0, 1),
+              Gap=None if meta.get("Gap") is None else round(meta["Gap"], 6),
+              下界_万元=None if meta.get("下界") is None else round(meta["下界"] / 1e4, 1),
+              触时限="是" if meta.get("触时限") else "", 种子=meta.get("种子"), 线程=meta.get("线程"))
     if v["pmd"]: kp["PM停线天"] = sum(1 for j in v["pmd"] if not v["wk"][j])   # A08 开启时才加这一列
-    return dict(kpi=kp, cost=cost, sched=sched, obj=obj)
+    return dict(kpi=kp, cost=cost, sched=sched, obj=obj, fix=fixed)
 
 def _key(d, cfg, strategy, buf_max):
     import engine as en

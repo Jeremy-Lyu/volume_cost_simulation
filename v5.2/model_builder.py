@@ -7,10 +7,12 @@ build(d) 按这个顺序往同一个问题上加式子，缺表的段落整段�
   4. 约束：每月一档、产能、订单平衡、车间之间的缓存平衡
   5. 可选：人数变化上限、JPH 相邻月只变一档、班次按季固定、权重、锁定已选方案
 
-solve(P, d) 调用 HiGHS，没有就用 CBC。日常命令不直接调这两个函数，走 engine.solved。
+solve(P, d) 调用 HiGHS，没有就用 CBC。种子默认 1，线程空着时用 1，并在 P.solve_meta 记下界和 Gap。日常命令走 engine.solved。
 目标是成本最低。配了 margin.csv 之后，目标改为成本减去边际贡献。"""
+import time
 import pulp
 import cost_functions as cf
+import solve_meta
 def build(d, jph_step=False, shift_quarter=False, util_cap=None, head_change=None, fix_y=None,
           head_up=None, head_dn=None, weights=None, cuts=None, cut_min_diff=2):
     """可选约束（默认关闭）：util_cap=正常班产能利用率上限(如0.9，加班产能另计)；head_change=各车间人数月环比变化上限(如0.05)；
@@ -328,6 +330,11 @@ def build(d, jph_step=False, shift_quarter=False, util_cap=None, head_change=Non
                    ship=ship, fginv=fginv, on=on, st=st, co2over=co2over,
                    calloff=calloff, line_inv=line_inv, onc=onc, ev=ev, sdo=sdo, bw=bw, swv=swv, jlost=lost)
 def solve(P, d):
-    gap = d["g"].get("mip_rel_gap", 1e-4); th = int(d["g"].get("threads", 0)) or None
-    s = pulp.HiGHS(msg=False, timeLimit=d["g"]["solver_time_limit"], gapRel=gap, threads=th) if "HiGHS" in pulp.listSolvers(True) else pulp.PULP_CBC_CMD(msg=False, timeLimit=int(d["g"]["solver_time_limit"]), gapRel=gap)
-    P.solve(s); return pulp.LpStatus[P.status], pulp.value(P.objective)
+    gap = d["g"].get("mip_rel_gap", 1e-4)
+    tl = d["g"]["solver_time_limit"]
+    s, threads, seed = solve_meta.make_solver(tl, gap, d["g"].get("threads"), d["g"].get("solver_seed", 1))
+    t0 = time.time()
+    P.solve(s)
+    obj = pulp.value(P.objective)
+    P.solve_meta = solve_meta.meta_from(P, obj, gap, tl, time.time() - t0, threads, seed)
+    return pulp.LpStatus[P.status], obj

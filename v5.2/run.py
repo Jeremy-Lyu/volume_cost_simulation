@@ -12,7 +12,12 @@ def main():
         rp.write_csv(os.path.join(OUT, f"plan_{name}.csv"), plan)
         rp.write_csv(os.path.join(OUT, f"cost_{name}.csv"), [{"科目": k, "金额_元": round(x)} for k, x in cost.items()])
         shifts = {s: "/".join(f"{int(r['jph'])}x{r['shifts']}" for r in plan if r["shop"] == s) for s in d["shops"]}
+        meta = v.get("solve_meta") or {}
         summ.append(dict(场景=name, 状态=st, 总成本_万元=round(obj/1e4), 运营成本_万元=round(kp["运营成本"]/1e4), 产量=round(out), 缺口=round(sh),
+                         Gap="" if meta.get("Gap") is None else round(meta["Gap"], 6),
+                         下界_万元="" if meta.get("下界") is None else round(meta["下界"] / 1e4, 1),
+                         触时限="是" if meta.get("触时限") else "", 求解秒=meta.get("求解秒", ""),
+                         种子=meta.get("种子", ""), 线程=meta.get("线程", ""),
                          延期台月=round(kp["延期台月"]), 流失台=round(kp["流失台"]), 加班h=round(kp["加班h"]), 超限加班h=round(kp["超限加班h"]),
                          平均缓存台=round(kp["平均缓存"]), 停线车间月=kp["停线车间月"],
                          单车成本_元=round(kp["单车成本"]), 加班成本_万元=round((cost["加班"]+cost.get("超限加班溢价",0))/1e4), 能源_万元=round(sum(x for kk, x in cost.items() if kk.startswith(("能源", "启停", "需量")))/1e4), **{f"{s}_JPHx班": shifts[s] for s in d["shops"]}))

@@ -2,6 +2,9 @@
 import csv, datetime, hashlib, json, os, subprocess
 import data_loader as dl
 import engine
+import monitor
+import pack_version
+import plant_check
 from scenarios import apply_knobs, load_library
 
 H = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -208,6 +211,62 @@ def warnings_for(knobs, new_cost, status):
     return items[:4]
 
 
+RANK = {"待建": 0, "自设值": 1, "待确认": 2, "已对齐": 3, "已回测": 4}
+
+
+def trust_line(rows):
+    """进了这次求解的参数里，取最低一档。待建表示那张表还没接，不拿来压低这一档。"""
+    used = [r.get("口径状态") for r in rows if r.get("口径状态") in RANK and r.get("口径状态") != "待建"]
+    pending = sum(1 for r in rows if r.get("口径状态") == "待建")
+    level = min(used, key=lambda s: RANK[s]) if used else "待建"
+    return (f"可信等级：{level}。这是这次用到的参数里最低的一档。"
+            f"另有 {pending} 项源系统还没接，标待建，不进这次求解。"
+            "没有 actual.csv 时，plant_check 到不了 L3，不能做历史回放。")
+
+
+def precision_line(meta, obj):
+    if not meta:
+        return "精度：这次没有写下界和间隙。"
+    gap = meta.get("Gap")
+    parts = []
+    if gap is not None:
+        parts.append(f"这次相对间隙 {gap:.4%}")
+        if obj:
+            parts.append(f"约 {abs(float(gap) * float(obj)) / 1e4:.1f} 万元")
+    setting = meta.get("设定Gap")
+    if setting is not None:
+        parts.append(f"设定间隙 {float(setting):.2%}")
+    hit = "触到时限" if meta.get("触时限") else "未触时限"
+    text = "精度：" + "，".join(parts) + f"。{hit}。种子 {meta.get('种子')}，线程 {meta.get('线程')}。两个方案的差额小于这个间隙时，视为相同。"
+    if meta.get("触时限"):
+        text += " 状态即使打印 Optimal，这次也停在时限上。"
+    return text
+
+
+def _knob_shifts(knobs):
+    rows = []
+    for key, label in (("demand_all", "需求"), ("elec", "电价"), ("wage", "工资"), ("gas", "气价")):
+        if key in (knobs or {}):
+            rows.append((monitor.level(knobs[key]), f"{label} ×{float(knobs[key]):.2f}"))
+    for month, val in ((knobs or {}).get("demand_month") or {}).items():
+        rows.append((monitor.level(val), f"{month} 月需求 ×{float(val):.2f}"))
+    return rows
+
+
+def drift_line(knobs):
+    """超过 5% 写观察，超过 10% 写降级提示。求解结果保留，不改成另一套班次。"""
+    rows = [(lv, text) for lv, text in _knob_shifts(knobs) if lv]
+    heavy = [text for lv, text in rows if lv == "降级"]
+    watch = [text for lv, text in rows if lv == "观察"]
+    if heavy:
+        return ("降级提示：" + "、".join(heavy) + " 相对 1 的变化超过 10%。"
+                "先看发布/样例/翻转表.md。求解结果仍保留，不自动改成另一套班次。")
+    if watch:
+        return ("观察：" + "、".join(watch) + " 相对 1 的变化在 5% 到 10%。"
+                "先重跑再看发布/样例/翻转表.md。求解结果仍保留。")
+    return ""
+
+
 def render_card(card):
     b, s = card["基准"], card["本次"]
     delta = s["运营成本_万元"] - b["运营成本_万元"]
@@ -218,10 +277,22 @@ def render_card(card):
         "示例数据。金额由求解器算出，不能手改。",
         "",
         f"问题：{card['问题']}",
-        f"配置 {card['配置版本']} · 代码 {card['代码版本']} · {card['运行时间']} · 结果 {card['结果哈希']}",
+        " · ".join(x for x in (
+            f"配置 {card['配置版本']}",
+            f"代码 {card['代码版本']}",
+            f"参数 {card['参数哈希']}" if card.get("参数哈希") else "",
+            card.get("假设开关") or "",
+            card["运行时间"],
+            f"结果 {card['结果哈希']}",
+        ) if x),
         f"场景：{card['名称']} · 求解 {s['状态']} · 对照：基准",
         "旋钮：" + (json.dumps(card["旋钮"], ensure_ascii=False) if card["旋钮"] else "无"),
         "",
+    ]
+    evidence = [card[k] for k in ("口径", "就绪", "精度", "上限", "翻转", "降级", "跨尺度") if card.get(k)]
+    if evidence:
+        lines += ["## 能不能用", ""] + evidence + [""]
+    lines += [
         "## ① 结果",
         "",
         f"全年运营成本 {s['运营成本_万元']:,} 万元，单车 {s['单车_元']:,} 元，产量 {s['产量']:,} 台。",
@@ -286,6 +357,8 @@ def run(question, knobs=None, name="自定义", decisions=None, source="cli"):
         名称=name or "自定义",
         配置版本=base_d["plant"].get("config_version", ""),
         代码版本=code_version(),
+        参数哈希=pack_version.data_hash(),
+        假设开关=pack_version.assumption_line(),
         运行时间=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         结果哈希=packed["哈希"],
         旋钮=knobs,
@@ -294,6 +367,13 @@ def run(question, knobs=None, name="自定义", decisions=None, source="cli"):
         科目差=accounts,
         为什么=_why(packed_b, packed, accounts),
         未验证=unverified_lines(cur["cost"]),
+        口径=trust_line(load_source_map()),
+        就绪="就绪度：" + plant_check.readiness(plant_check.check(os.path.join(H, "data"))[1]),
+        跨尺度="白车身缓存上限和借调净额见发布/样例/未验证清单.csv。这两项不进合计。",
+        精度=precision_line(cur.get("meta") or {}, cur.get("obj")),
+        上限="A05–A10 和月度粗参数默认关闭。少开班、停线、降档算出来的节省是上限，不要写成已经省下的钱。",
+        翻转="五个标准场景的班次对照在发布/样例/翻转表.md。总装只在需求 −10% 改成全年 30×2。从 0 到 −10% 的临界百分比没有重解。差额小于上面的间隙时，不要说谁更优。",
+        降级=drift_line(knobs),
         风险="本次未做样本风险，没有 P90，也没有超预算概率。求解状态：{}。".format(packed["状态"]),
         待确认=warnings_for(knobs, cur["cost"], packed["状态"]),
         拍板=list(decisions or []),

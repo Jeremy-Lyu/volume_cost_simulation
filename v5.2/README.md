@@ -43,12 +43,13 @@ python3 -m venv .venv
 | 文件 | 内容 |
 | :-- | :-- |
 | `output/results_summary.md` | 五个标准场景的总成本和班次 |
+| `output/scenario_summary.csv` | 同上，并有间隙、下界、是否触到时限、求解秒、种子、线程 |
 | `output/plan_<场景>.csv` | 每车间每月 JPH、班次、人数、加班、产量 |
 | `output/cost_<场景>.csv` | 成本分项 |
 | `output/workbench/*.md` | 网页或命令行写出的决策卡 |
 | `output/strategy_summary.csv` | 成本优先 / 稳定优先 / 保人力 |
 
-决策卡上的「运营成本」和 `run.py` 表上的「总成本」取整可能差一两万。案例解析文首写了怎么对。策略卡的对照是扫描口径里的成本优先，场景卡的对照是基准，两张卡的差额不要加在一起。
+决策卡上的「运营成本」和 `run.py` 表上的「总成本」取整可能差一两万。案例解析文首写了怎么对。策略卡的对照是扫描口径里的成本优先，场景卡的对照是基准，两张卡的差额不要加在一起。决策卡在数字前面写可信等级、就绪度、间隙和是否触到时限。读法在 [设计说明](../发布/设计说明.md) 第 4 节。
 
 ## 模块
 
@@ -56,12 +57,13 @@ python3 -m venv .venv
 | :-- | :-- |
 | `data/*.csv`、`plant.json` | 主数据、需求、产能、JPH、班次、工厂配置包 |
 | `engine.py` | 月度求解入口。`solved` 解一次；`solve_case` 是同一个模型加缓存 |
+| `solve_meta.py` | 固定种子，线程空着时用 1，并记下界、间隙、是否触到时限 |
 | `model_builder.py` | 月度模型本身。日常命令不直接调用 |
 | `data_loader.py` | 读表、校验、场景覆盖 |
 | `scenarios.py` | 旋钮 `apply_knobs`，读取 `scenario_library.csv` |
 | `cost_functions.py` | 人力、加班、能源接口、制造费用 |
 | `energy.py` | 浙江分时电价、运行/待机/天然气/启停/需量 |
-| `daily.py` | 焊装 → 白车身缓存 → 涂装，按天 |
+| `daily.py` | 焊装 → 白车身缓存 → 涂装，按天。有实际排法时只计价，不重新选班次 |
 | `report.py` | 报表科目、自检 |
 | `run.py` | 五个标准场景，并和 `golden.csv` 比对 |
 | `workbench/` | 决策卡、网页、中文对话 |

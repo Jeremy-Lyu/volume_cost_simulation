@@ -1,0 +1,12 @@
+场景,类别,动到的旋钮,是否组合
+旺季冲量,需求,demand_month,否
+出口集中发运,物流,demand_cell,否
+缺芯,供应,supply,否
+焊装停线一周,设备,down,否
+春节后出勤低,人力,avail,否
+限电,能源政策,avail,否
+电价上涨,能源政策,elec,否
+组合冲击,组合,demand_month;supply;avail,是
+开停校正,方向,head_up;head_dn;post_switch_eff;pm_days;moq_fee;restart_cost,否
+需求降且加人慢,组合,demand_all;head_up,是
+需求降且停工发全薪,组合,demand_all;stop_pay,是

@@ -23,6 +23,7 @@ def build_solve(d, **kw):
     """建月度模型并求解一次。不读缓存，不放宽时限。"""
     P, v = mb.build(d, **kw)
     st, obj = mb.solve(P, d)
+    v["solve_meta"] = dict(getattr(P, "solve_meta", {}) or {})
     return st, obj, v
 def solved(d, **kw):
     """build_solve 之后抽出计划、科目、产量、缺口。调用方自己做守恒自检。"""
@@ -40,7 +41,8 @@ def solve_case(d, name="", use_cache=True, **kw):
     assert not err, f"{name} 守恒自检失败: {err}"
     k = rp.kpis(d, v, plan, cost, out, obj)
     r = dict(name=name, status=st, obj=obj, out=out, lost=sh, kpi=k, cost=cost, plan=plan,
-             y={kk: round(var.value()) for kk, var in v["y"].items()}, seconds=time.time() - t0, cached=False, hash=key); r["solve_seconds"] = r["seconds"]
+             y={kk: round(var.value()) for kk, var in v["y"].items()}, seconds=time.time() - t0, cached=False, hash=key,
+             meta=v.get("solve_meta") or {}); r["solve_seconds"] = r["seconds"]
     os.makedirs(CACHE, exist_ok=True); pickle.dump(r, open(p, "wb")); return r
 def _job(a): d, name, kw = a; return solve_case(d, name, **kw)
 def run_many(cases, procs=4):
