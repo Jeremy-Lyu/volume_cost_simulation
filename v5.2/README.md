@@ -58,6 +58,7 @@ python3 -m venv .venv
 | `data/*.csv`、`plant.json` | 主数据、需求、产能、JPH、班次、工厂配置包 |
 | `engine.py` | 月度求解入口。`solved` 解一次；`solve_case` 是同一个模型加缓存 |
 | `solve_meta.py` | 固定种子，线程空着时用 1，并记下界、间隙、是否触到时限 |
+| `run_record.py` | 决策卡同名的 JSON 快照。字段见 `发布/样例/结果契约.md` |
 | `model_builder.py` | 月度模型本身。日常命令不直接调用 |
 | `data_loader.py` | 读表、校验、场景覆盖 |
 | `scenarios.py` | 旋钮 `apply_knobs`，读取 `scenario_library.csv` |

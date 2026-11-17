@@ -11,8 +11,11 @@ def d(): return small()
 def test_cache_hit(d):
     r1 = en.solve_case(copy.deepcopy(d), "a"); t = time.time(); r2 = en.solve_case(copy.deepcopy(d), "b")
     assert r2["cached"] and time.time() - t < 1 and abs(r1["obj"] - r2["obj"]) < 1e-6
-def test_hash_ignores_threads(d):
-    e = copy.deepcopy(d); e["g"]["threads"] = 1; assert en.phash(d, {}) == en.phash(e, {})
+def test_hash_treats_blank_threads_as_one(d):
+    e = copy.deepcopy(d); e["g"]["threads"] = 1
+    assert en.phash(d, {}) == en.phash(e, {})
+    f = copy.deepcopy(d); f["g"]["threads"] = 4
+    assert en.phash(d, {}) != en.phash(f, {})
 def test_weights_not_in_opcost(d):
     r0 = en.solve_case(copy.deepcopy(d), "c"); rw = en.solve_case(copy.deepcopy(d), "w", weights=dict(stab=2, deliv=1))
     wt = sum(v for k, v in rw["cost"].items() if k.startswith("权重:"))

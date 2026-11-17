@@ -64,6 +64,6 @@ def main():
         k = {daily.NAMES[s]: res[s]["kpi"]["运营成本_万元"] for s in res}
         print("[按天] 运营成本(万元)：", k, "｜上次：", last.get("daily", "—")); last["daily"] = k
     man["hash"] = new; os.makedirs(os.path.dirname(MAN), exist_ok=True); json.dump(man, open(MAN, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    print(f"完成，用时 {time.time() - t0:.1f}s。结果在 output/quick/ 与 output/v5.1/")
+    print(f"完成，用时 {time.time() - t0:.1f}s。结果在 output/quick/ 与 output/daily/")
 
 if __name__ == "__main__": main()

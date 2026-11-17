@@ -173,3 +173,24 @@ def test_example_pack_is_runnable_without_actuals():
     level = plant_check.readiness(plant_check.check(root)[1])
     assert level.startswith("L2")
     assert "不能回测" in level
+
+
+def test_run_record_carries_the_contract_keys():
+    import run_record
+    card = dict(
+        名称="开停校正", 问题="粗参数", 配置版本="TZ-示例", 代码版本="abc",
+        参数哈希="deadbeef", 假设开关="假设开关：A05–A10 默认关闭",
+        运行时间="2026-11-17 00:00", 结果哈希="def", 旋钮={"pm_days": 2},
+        基准=dict(状态="Optimal", 运营成本_万元=44289, 产量=120000),
+        本次=dict(状态="Optimal", 运营成本_万元=44625, 单车_元=3719, 产量=120000,
+                  延期台月=60, 流失台=0, 班次=["总装：全年 36 JPH × 2 班"]),
+        口径="可信等级：自设值", 精度="精度：未触时限", 上限="节省是上限",
+        就绪="就绪度：L2 可测算：可以跑模型，但缺实际数据，不能回测对账",
+        未验证=["借调净额未验证"],
+    )
+    rec = run_record.from_card(card)
+    assert rec["schema"] == "vcs_run/0.1"
+    assert rec["场景ID"] == "开停校正"
+    assert rec["比基准_万元"] == 336
+    assert rec["示例数据"] is True
+    assert "不替代 MES/APS" in rec["不做"]

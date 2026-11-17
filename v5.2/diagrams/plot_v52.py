@@ -28,7 +28,9 @@ def fig_tiers():
     axs[0].set_ylabel("JPH 档"); fig.suptitle("JPH 档月度轨迹：加入换档成本（30 万元/次 + 2 天产出 ⚠）后换档明显减少（示例数据）", fontsize=14)
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "图8_JPH换档轨迹.png"), dpi=120); plt.close(fig)
 def fig_sweep():
-    p = os.path.join(V2, "v5.1", "daily_flex_sweep.csv")
+    p = os.path.join(V2, "daily", "daily_flex_sweep.csv")
+    if not os.path.exists(p):
+        p = os.path.join(V2, "v5.1", "daily_flex_sweep.csv")  # 旧路径兼容
     if not os.path.exists(p): return
     R = rd(p); fig, ax = plt.subplots(1, 2, figsize=(17, 6))
     for kj, c in (("每天可少开班", "#1565c0"), ("整班开/整天停", "#c62828")):
@@ -40,7 +42,9 @@ def fig_sweep():
         ax[0].plot([int(r["派遣比"].rstrip("%")) for r in w], [float(r["运营成本_万元"]) for r in w], "s--", color=c, alpha=.6, label=f"{kj}：每个工作日都开")
         for r, xx in zip(o, x): ax[0].annotate((f"开{r['涂装开工天']}天\n省{r['比每工作日都开省_万元']}万" if float(r['比每工作日都开省_万元']) > 6 else f"开{r['涂装开工天']}天\n≈0（求解精度内）"), (xx, float(r["运营成本_万元"])), textcoords="offset points", xytext=(6, 6), fontsize=9, color=c)
     ax[0].set_xlabel("派遣/临时工占比 %"); ax[0].set_ylabel("月运营成本 万元"); ax[0].legend(fontsize=9); ax[0].set_title("月需求 6,000 台、2 班定员：开停策略 vs 每工作日都开", fontsize=12)
-    bb = os.path.join(V2, "v5.1", "daily_buffer_bind.csv")
+    bb = os.path.join(V2, "daily", "daily_buffer_bind.csv")
+    if not os.path.exists(bb):
+        bb = os.path.join(V2, "v5.1", "daily_buffer_bind.csv")
     o = sorted([r for r in R if r["口径"] == "整班开/整天停" and r["派遣比"] == "50%" and r["策略"] == "模型自主排产"] + (rd(bb) if os.path.exists(bb) else []), key=lambda r: int(r["白车身库容"]))
     x = [int(r["白车身库容"]) for r in o]
     ax[1].plot(x, [float(r["运营成本_万元"]) for r in o], "o-", color="#c62828", label="月运营成本（万元）")

@@ -5,6 +5,7 @@ import engine
 import monitor
 import pack_version
 import plant_check
+import run_record
 from scenarios import apply_knobs, load_library
 
 H = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -387,10 +388,14 @@ def run(question, knobs=None, name="自定义", decisions=None, source="cli"):
     rec["比基准_万元"] = packed["运营成本_万元"] - packed_b["运营成本_万元"]
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    path = os.path.join(OUT, f"{card['运行时间'].replace(' ', '_').replace(':', '')}_{name}.md")
+    stamp = card["运行时间"].replace(" ", "_").replace(":", "")
+    path = os.path.join(OUT, f"{stamp}_{name}.md")
     with open(path, "w", encoding="utf-8") as f:
         f.write(card["正文"])
+    snap = os.path.join(OUT, f"{stamp}_{name}.json")
+    run_record.write(card, snap)
     card["文件"] = path
+    card["快照"] = snap
     return card
 
 

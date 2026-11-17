@@ -8,7 +8,7 @@
 import copy, csv, json, os, sys, time, hashlib, pickle
 import pulp
 import data_loader as dl, cost_functions as cf, energy as E, solve_meta
-H = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(H, "output", "v5.1"); CACHE = os.path.join(H, ".cache")
+H = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(H, "output", "daily"); CACHE = os.path.join(H, ".cache")
 NAMES = dict(continuous="连续生产（工作日三班、周末保温）", sync="焊装涂装同步开停（模型选日）", optimal="模型自主排产", two_shift="工作日两班+周末停炉（参考）", weekdays="每个工作日都开（不主动停线，对照）")
 
 def load_cfg(base=None):

@@ -16,8 +16,14 @@ def _canon(o):
     if isinstance(o, float): return repr(round(o, 9))
     return repr(o)
 def phash(d, kw):
-    src = b"".join(open(os.path.join(H, n), "rb").read() for n in ("model_builder.py", "cost_functions.py", "energy.py", "report.py"))   # v5.1：能源层/报表变更也使缓存失效
-    dd = dict(d); dd["g"] = {k: v for k, v in d["g"].items() if k != "threads"}
+    # solve_meta 改种子或默认线程时也要失效。空着/0 与 1 视为同一有效线程数。
+    src = b"".join(open(os.path.join(H, n), "rb").read() for n in
+                   ("model_builder.py", "cost_functions.py", "energy.py", "report.py", "solve_meta.py"))
+    dd = dict(d)
+    g = dict(d["g"])
+    threads = int(g.get("threads") or 0)
+    g["threads"] = 1 if threads <= 0 else threads
+    dd["g"] = g
     return hashlib.sha1((_canon(dd) + _canon(kw)).encode() + src).hexdigest()[:20]
 def build_solve(d, **kw):
     """建月度模型并求解一次。不读缓存，不放宽时限。"""
